@@ -45,3 +45,41 @@ FROM(SELECT nvl(year,'총합') year, nvl(month,'total') month, nvl(cnt,0) cnt
     GROUP BY cube(to_char(hire_date,'yyyy'),to_char(hire_date,'mm'))))
 PIVOT (max(cnt) for month in ('01' "01",'02' "02",'03' "03",'04' "04",'05' "05",'06' "06",'07' "07",'08' "08",'09' "09",'10' "10",'11' "11",'12' "12",'total' total))
 Order by 1;
+
+--22.01.22
+--[문제] locations 테이블에 있는 city컬럼에 Toronto도시에서 근무하는 모든 사원의 last_name, job_id, department_id, department_name를 출력하세요.
+SELECT e.last_name, e.job_id, e.department_id, c.dept_name
+FROM (SELECT d.department_id dept_id, d.department_name dept_name
+        FROM departments d, locations l
+        WHERE l.city='Toronto'
+        AND l.location_id=d.location_id) c, employees e
+WHERE e.department_id=c.dept_id;
+
+--[문제]사원들의 급여의 등급 레이블의 빈도수를 출력해주세요.
+SELECT j.grade_level, count(e.salary)
+FROM employees e, job_grades j
+WHERE e.salary between j.lowest_sal and j.highest_sal
+GROUP BY j.grade_level
+ORDER BY 1;
+
+--[문제]사원들의 급여의 등급 레이블의 빈도수와 빈도수의 총합을 출력해주세요.
+SELECT nvl(j.grade_level,'총 합계'), count(e.salary)
+FROM employees e, job_grades j
+WHERE e.salary between j.lowest_sal and j.highest_sal
+GROUP BY cube(j.grade_level)
+ORDER BY 1;
+
+--[문제] 상위 20%의 월급을 받는 사원들의 last_name, department_name, salary를 출력해주세요.
+SELECT e.last_name, d.department_name, e.salary
+FROM employees e, departments d
+WHERE d.department_id=e.department_id
+ORDER BY 3 desc 
+FETCH FIRST 20 PERCENT ROWS ONLY;
+
+--[문제] last_name이 Chen인 사원과 같은 달에 입사한 사원의 정보를 출력해주세요. (Chen의 정보는 제외)
+SELECT *
+FROM employees
+WHERE to_char(hire_date,'yyyy/mm')= (SELECT to_char(hire_date,'yyyy/mm')
+                                FROM employees
+                                WHERE last_name='Chen')
+AND last_name != 'Chen';          
