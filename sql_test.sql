@@ -84,3 +84,24 @@ WHERE to_char(hire_date,'yyyy/mm')= (SELECT to_char(hire_date,'yyyy/mm')
                                 FROM employees
                                 WHERE last_name='Chen')
 AND last_name != 'Chen';          
+
+--22.01.24
+--[문제]employees중 manager가 아닌 사원들의 부서별 SALARY 평균을 출력해주세요. distinct함수 사용 금지
+SELECT department_id, avg_sal
+FROM(SELECT department_id, avg(salary) over(partition by department_id) avg_sal
+      FROM employees e
+      WHERE not exists (SELECT 1
+                        FROM employees
+                        WHERE e.employee_id = manager_id)
+        union
+        SELECT department_id, NULL
+        FROM departments)
+WHERE avg_sal is not null
+AND department_id is not null;
+--[문제] 부서별 최고 급여자들의 정보를 모두 출력해주세요.
+SELECT *
+FROM employees
+WHERE employee_id in (SELECT employee_id
+                FROM(SELECT EMPLOYEE_ID, rank() over(partition by DEPARTMENT_ID order by SALARY desc) ord_sal
+                 FROM employees)
+                 WHERE ord_sal=1);
