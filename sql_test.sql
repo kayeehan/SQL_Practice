@@ -159,3 +159,90 @@ FROM ANIMAL_INS;
 --동물 보호소에 들어온 동물의 이름은 몇 개인지 조회하는 SQL 문을 작성해주세요. 이때 이름이 NULL인 경우는 집계하지 않으며 중복되는 이름은 하나로 칩니다.
 SELECT COUNT(DISTINCT NAME)
 FROM ANIMAL_INS;
+
+--동물 보호소에 들어온 동물 중 고양이와 개가 각각 몇 마리인지 조회하는 SQL문을 작성해주세요. 이때 고양이를 개보다 먼저 조회해주세요.
+SELECT ANIMAL_TYPE, count(*)
+FROM ANIMAL_INS
+WHERE ANIMAL_TYPE IN ('Cat','Dog')
+GROUP BY ANIMAL_TYPE
+ORDER BY 1;
+
+--동물 보호소에 들어온 동물 이름 중 두 번 이상 쓰인 이름과 해당 이름이 쓰인 횟수를 조회하는 SQL문을 작성해주세요. 이때 결과는 이름이 없는 동물은 집계에서 제외하며, 결과는 이름 순으로 조회해주세요.
+SELECT NAME, count(*)
+FROM ANIMAL_INS
+GROUP BY NAME
+HAVING NAME IS NOT NULL
+AND COUNT(*) >= 2
+ORDER BY 1;
+
+--보호소에서는 몇 시에 입양이 가장 활발하게 일어나는지 알아보려 합니다. 09:00부터 19:59까지, 각 시간대별로 입양이 몇 건이나 발생했는지 조회하는 SQL문을 작성해주세요. 이때 결과는 시간대 순으로 정렬해야 합니다.
+SELECT hour(DATETIME) HOUR, count(*) COUNT
+FROM ANIMAL_OUTS
+WHERE hour(DATETIME) between 9 and 19
+GROUP BY hour(DATETIME)
+ORDER BY 1;
+
+--보호소에서는 몇 시에 입양이 가장 활발하게 일어나는지 알아보려 합니다. 0시부터 23시까지, 각 시간대별로 입양이 몇 건이나 발생했는지 조회하는 SQL문을 작성해주세요. 이때 결과는 시간대 순으로 정렬해야 합니다.
+SELECT D.HOUR, nvl(A.COUNT,0)
+FROM (SELECT to_char(DATETIME,'hh24') HOUR, COUNT(*) COUNT
+        FROM ANIMAL_OUTS
+        GROUP BY to_char(DATETIME,'hh24')) A,
+    (SELECT level-1 HOUR
+        FROM dual
+        CONNECT BY level <= 24) D
+WHERE D.HOUR = A.HOUR(+)
+ORDER BY 1;
+
+--동물 보호소에 들어온 동물 중, 이름이 없는 채로 들어온 동물의 ID를 조회하는 SQL 문을 작성해주세요. 단, ID는 오름차순 정렬되어야 합니다.
+SELECT ANIMAL_ID
+FROM ANIMAL_INS
+WHERE NAME is null
+ORDER BY 1;
+
+--동물 보호소에 들어온 동물 중, 이름이 있는 동물의 ID를 조회하는 SQL 문을 작성해주세요. 단, ID는 오름차순 정렬되어야 합니다.
+SELECT ANIMAL_ID
+FROM ANIMAL_INS
+WHERE NAME IS NOT NULL
+ORDER BY 1;
+
+--입양 게시판에 동물 정보를 게시하려 합니다. 동물의 생물 종, 이름, 성별 및 중성화 여부를 아이디 순으로 조회하는 SQL문을 작성해주세요. 이때 프로그래밍을 모르는 사람들은 NULL이라는 기호를 모르기 때문에, 이름이 없는 동물의 이름은 "No name"으로 표시해 주세요.
+SELECT ANIMAL_TYPE, nvl(NAME,'No name'), SEX_UPON_INTAKE
+FROM ANIMAL_INS
+ORDER BY ANIMAL_ID;
+
+--천재지변으로 인해 일부 데이터가 유실되었습니다. 입양을 간 기록은 있는데, 보호소에 들어온 기록이 없는 동물의 ID와 이름을 ID 순으로 조회하는 SQL문을 작성해주세요.
+SELECT ANIMAL_ID, NAME
+FROM ANIMAL_OUTS O
+WHERE NOT EXISTS (SELECT 'X'
+             FROM ANIMAL_INS
+                 WHERE ANIMAL_ID=O.ANIMAL_ID )
+ORDER BY 1;
+
+--관리자의 실수로 일부 동물의 입양일이 잘못 입력되었습니다. 보호 시작일보다 입양일이 더 빠른 동물의 아이디와 이름을 조회하는 SQL문을 작성해주세요. 이때 결과는 보호 시작일이 빠른 순으로 조회해야합니다.
+SELECT I.ANIMAL_ID, I.NAME
+FROM ANIMAL_INS I
+WHERE I.ANIMAL_ID = (SELECT ANIMAL_ID
+                     FROM ANIMAL_OUTS
+                     WHERE ANIMAL_ID=I.ANIMAL_ID
+                     AND DATETIME<=I.DATETIME)
+ORDER BY I.DATETIME;      
+
+--아직 입양을 못 간 동물 중, 가장 오래 보호소에 있었던 동물 3마리의 이름과 보호 시작일을 조회하는 SQL문을 작성해주세요. 이때 결과는 보호 시작일 순으로 조회해야 합니다.
+SELECT ANI.NAME, ANI.DATETIME
+FROM(SELECT ANIMAL_ID, NAME, DATETIME, RANK() OVER(ORDER BY DATETIME) RANK
+    FROM ANIMAL_INS I
+    WHERE NOT EXISTS (SELECT 'X'
+                 FROM ANIMAL_OUTS
+                 WHERE ANIMAL_ID=I.ANIMAL_ID)) ANI
+WHERE ANI.RANK BETWEEN 1 AND 3
+ORDER BY ANI.DATETIME;
+
+--보호소에서 중성화 수술을 거친 동물 정보를 알아보려 합니다. 보호소에 들어올 당시에는 중성화1되지 않았지만, 보호소를 나갈 당시에는 중성화된 동물의 아이디와 생물 종, 이름을 조회하는 아이디 순으로 조회하는 SQL 문을 작성해주세요.
+SELECT O.ANIMAL_ID, O.ANIMAL_TYPE, O.NAME
+FROM ANIMAL_OUTS O
+WHERE O.SEX_UPON_OUTCOME in ('Neutered Male', 'Spayed Female')
+AND EXISTS (SELECT 'X'
+                 FROM ANIMAL_INS
+                 WHERE SEX_UPON_INTAKE in ('Intact Male','Intact Female')
+                 AND O.ANIMAL_ID=ANIMAL_ID)
+ORDER BY 1;
