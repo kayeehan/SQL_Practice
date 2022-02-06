@@ -280,3 +280,15 @@ WHERE rownum <= 2;
 SELECT animal_id, name, to_char(datetime,'YYYY-MM-DD') 날짜
 FROM ANIMAL_INS
 ORDER BY 1;
+
+/*Write an SQL query to report the first name, last name, city, and state of each person in the Person table. If the address of a personId is not present in the Address table, report null instead.
+Return the result table in any order.*/
+SELECT P.firstName, P.lastName, A.city, A.state
+FROM Address A, Person P
+WHERE A.personId(+) = P.personId;
+
+--Write an SQL query to report the second highest salary from the Employee table. If there is no second highest salary, the query should report null.
+SELECT M.salary "SecondHighestSalary"
+FROM (SELECT salary, rank() over(order by salary desc) rank
+        FROM Employee) M
+WHERE M.rank = 2;
