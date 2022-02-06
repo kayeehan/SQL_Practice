@@ -288,7 +288,7 @@ FROM Address A, Person P
 WHERE A.personId(+) = P.personId;
 
 --Write an SQL query to report the second highest salary from the Employee table. If there is no second highest salary, the query should report null.
-SELECT M.salary "SecondHighestSalary"
-FROM (SELECT salary, rank() over(order by salary desc) rank
-        FROM Employee) M
-WHERE M.rank = 2;
+SELECT nvl(max(salary),NULL) "SecondHighestSalary"
+FROM Employee
+WHERE salary != (SELECT max(salary)
+                FROM Employee);
