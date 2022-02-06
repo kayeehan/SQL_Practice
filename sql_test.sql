@@ -292,3 +292,16 @@ SELECT nvl(max(salary),NULL) "SecondHighestSalary"
 FROM Employee
 WHERE salary != (SELECT max(salary)
                 FROM Employee);
+
+--Write an SQL query to report the nth highest salary from the Employee table. If there is no nth highest salary, the query should report null.
+CREATE FUNCTION getNthHighestSalary(N IN NUMBER) 
+RETURN NUMBER IS
+result NUMBER;
+BEGIN
+    SELECT nvl(salary,NULL) INTO result
+    FROM (SELECT distinct salary, dense_rank() over(order by salary desc) ranking
+            FROM Employee)
+    WHERE ranking = N;
+    
+    RETURN result;
+END;
