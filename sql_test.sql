@@ -281,19 +281,22 @@ SELECT animal_id, name, to_char(datetime,'YYYY-MM-DD') 날짜
 FROM ANIMAL_INS
 ORDER BY 1;
 
-/*Write an SQL query to report the first name, last name, city, and state of each person in the Person table. If the address of a personId is not present in the Address table, report null instead.
+/*leetcode 175. Combine Two Tables
+Write an SQL query to report the first name, last name, city, and state of each person in the Person table. If the address of a personId is not present in the Address table, report null instead.
 Return the result table in any order.*/
 SELECT P.firstName, P.lastName, A.city, A.state
 FROM Address A, Person P
 WHERE A.personId(+) = P.personId;
 
---Write an SQL query to report the second highest salary from the Employee table. If there is no second highest salary, the query should report null.
+/*leetcode 176. Second Highest Salary
+Write an SQL query to report the second highest salary from the Employee table. If there is no second highest salary, the query should report null.*/
 SELECT nvl(max(salary),NULL) "SecondHighestSalary"
 FROM Employee
 WHERE salary != (SELECT max(salary)
                 FROM Employee);
 
---Write an SQL query to report the nth highest salary from the Employee table. If there is no nth highest salary, the query should report null.
+/*leetcode 177.  Second Highest Salary
+Write an SQL query to report the nth highest salary from the Employee table. If there is no nth highest salary, the query should report null.*/
 CREATE FUNCTION getNthHighestSalary(N IN NUMBER) 
 RETURN NUMBER IS
 result NUMBER;
@@ -305,3 +308,35 @@ BEGIN
     
     RETURN result;
 END;
+
+/*leetcode 178. Rank Scores
+Write an SQL query to rank the scores. The ranking should be calculated according to the following rules:
+
+-The scores should be ranked from the highest to the lowest.
+-If there is a tie between two scores, both should have the same ranking.
+-After a tie, the next ranking number should be the next consecutive integer value. In other words, there should be no holes between ranks.
+Return the result table ordered by score in descending order.*/
+SELECT score, dense_rank() over(order by score desc) rank
+FROM scores
+ORDER BY score desc;
+
+--Runtime: 855 ms, faster than 24.81% of Oracle online submissions for Rank Scores.
+/*leetcode 180. Consecutive Numbers
+Write an SQL query to find all numbers that appear at least three times consecutively.
+Return the result table in any order.*/
+SELECT distinct t1.num as "ConsecutiveNums"
+FROM logs t1, logs t2, logs t3
+WHERE t1.id = t2.id+1
+AND t2.id = t3.id+1
+AND t1.num = t2.num
+AND t2.num = t3.num;
+--Runtime: 869 ms, faster than 58.13% of Oracle online submissions for Consecutive Numbers.
+
+/*leetcode 181. Employees Earning More Than Their Managers
+Write an SQL query to find the employees who earn more than their managers.
+Return the result table in any order.*/
+SELECT e1.name "Employee"
+FROM employee e1, employee e2
+WHERE e1.managerid = e2.id
+AND e1.salary > e2.salary;
+--Runtime: 618 ms, faster than 77.09% of Oracle online submissions for Employees Earning More Than Their Managers.
