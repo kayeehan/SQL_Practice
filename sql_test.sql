@@ -340,3 +340,14 @@ FROM employee e1, employee e2
 WHERE e1.managerid = e2.id
 AND e1.salary > e2.salary;
 --Runtime: 618 ms, faster than 77.09% of Oracle online submissions for Employees Earning More Than Their Managers.
+
+/*leetcode 182. Duplicate Emails
+Write an SQL query to report all the duplicate emails.
+Return the result table in any order.*/
+SELECT email "Email"
+FROM (SELECT email, count(*) cnt
+     FROM Person
+     GROUP BY email
+     HAVING count(*)>=2);
+--Runtime: 545 ms, faster than 92.39% of Oracle online submissions for Duplicate Emails.
+
