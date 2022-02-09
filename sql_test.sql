@@ -351,3 +351,73 @@ FROM (SELECT email, count(*) cnt
      HAVING count(*)>=2);
 --Runtime: 545 ms, faster than 92.39% of Oracle online submissions for Duplicate Emails.
 
+/*leetcode 183. Customers Who Never Order
+Write an SQL query to report all customers who never order anything.
+Return the result table in any order.
+Output: 
++-----------+
+| Customers |
++-----------+
+| Henry     |
+| Max       |
++-----------+*/
+SELECT C.name "Customers"
+FROM customers C
+WHERE not exists (SELECT 'x'
+                 FROM orders
+                 WHERE C.id=customerid);
+--Runtime: 697 ms, faster than 89.90% of Oracle online submissions for Customers Who Never Order.
+
+/*leetcode 184. Department Highest Salary
+Write an SQL query to find employees who have the highest salary in each of the departments.
+Return the result table in any order.
+Output: 
++------------+----------+--------+
+| Department | Employee | Salary |
++------------+----------+--------+
+| IT         | Jim      | 90000  |
+| Sales      | Henry    | 80000  |
+| IT         | Max      | 90000  |
++------------+----------+--------+
+Explanation: Max and Jim both have the highest salary in the IT department and Henry has the highest salary in the Sales department.
+*/
+SELECT D.name "Department", E.name "Employee", E.max_sal "Salary"
+FROM (SELECT name, departmentid, salary, max(salary) over(partition by departmentid) max_sal
+    FROM employee) E, department D
+WHERE E.departmentid=D.id
+AND E.salary=E.max_sal;
+--Runtime: 1800 ms, faster than 11.56% of Oracle online submissions for Department Highest Salary.
+
+/*leetcode 185. Department Top Three Salaries
+A company's executives are interested in seeing who earns the most money in each of the company's departments. A high earner in a department is an employee who has a salary in the top three unique salaries for that department.
+Write an SQL query to find the employees who are high earners in each of the departments.
+Return the result table in any order.
+The query result format is in the following example.
+Output: 
++------------+----------+--------+
+| Department | Employee | Salary |
++------------+----------+--------+
+| IT         | Max      | 90000  |
+| IT         | Joe      | 85000  |
+| IT         | Randy    | 85000  |
+| IT         | Will     | 70000  |
+| Sales      | Henry    | 80000  |
+| Sales      | Sam      | 60000  |
++------------+----------+--------+
+Explanation: 
+In the IT department:
+- Max earns the highest unique salary
+- Both Randy and Joe earn the second-highest unique salary
+- Will earns the third-highest unique salary
+In the Sales department:
+- Henry earns the highest salary
+- Sam earns the second-highest salary
+- There is no third-highest salary as there are only two employees
+*/
+SELECT  M.dept_name "Department", M.emp_name "Employee", M.sal "Salary"
+FROM (SELECT D.name dept_name, E.name emp_name, E.salary sal, dense_rank() over(partition by E.departmentid order by E.salary desc) rank
+     FROM department D, employee E
+     WHERE E.departmentid=D.id) M
+WHERE M.rank<=3
+ORDER BY 1,3;
+--Runtime: 1586 ms, faster than 27.42% of Oracle online submissions for Department Top Three Salaries.
