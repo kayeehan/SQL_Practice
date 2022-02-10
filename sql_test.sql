@@ -421,3 +421,68 @@ FROM (SELECT D.name dept_name, E.name emp_name, E.salary sal, dense_rank() over(
 WHERE M.rank<=3
 ORDER BY 1,3;
 --Runtime: 1586 ms, faster than 27.42% of Oracle online submissions for Department Top Three Salaries.
+
+/*leetcode 262. Trips and Users
+The cancellation rate is computed by dividing the number of canceled (by client or driver) requests with unbanned users by the total number of requests with unbanned users on that day.
+Write a SQL query to find the cancellation rate of requests with unbanned users (both client and driver must not be banned) each day between "2013-10-01" and "2013-10-03". Round Cancellation Rate to two decimal points.
+Return the result table in any order.
+The query result format is in the following example.
+Output: 
++------------+-------------------+
+| Day        | Cancellation Rate |
++------------+-------------------+
+| 2013-10-01 | 0.33              |
+| 2013-10-02 | 0.00              |
+| 2013-10-03 | 0.50              |
++------------+-------------------+
+Explanation: 
+On 2013-10-01:
+  - There were 4 requests in total, 2 of which were canceled.
+  - However, the request with Id=2 was made by a banned client (User_Id=2), so it is ignored in the calculation.
+  - Hence there are 3 unbanned requests in total, 1 of which was canceled.
+  - The Cancellation Rate is (1 / 3) = 0.33
+On 2013-10-02:
+  - There were 3 requests in total, 0 of which were canceled.
+  - The request with Id=6 was made by a banned client, so it is ignored.
+  - Hence there are 2 unbanned requests in total, 0 of which were canceled.
+  - The Cancellation Rate is (0 / 2) = 0.00
+On 2013-10-03:
+  - There were 3 requests in total, 1 of which was canceled.
+  - The request with Id=8 was made by a banned client, so it is ignored.
+  - Hence there are 2 unbanned request in total, 1 of which were canceled.
+  - The Cancellation Rate is (1 / 2) = 0.50*/
+SELECT request_at "Day", round(sum(case when status like 'cancelled_by_%' then 1 else 0 end)/count(*),2) "Cancellation Rate"
+FROM trips
+WHERE request_at between '2013-10-01' and '2013-10-03'
+AND client_id NOT IN (SELECT users_id
+                     FROM users
+                     WHERE banned = 'Yes')
+AND driver_id NOT IN (SELECT users_id
+                     FROM users
+                     WHERE banned = 'Yes')
+GROUP BY request_at
+ORDER BY 1;
+--Runtime: 838 ms, faster than 74.69% of Oracle online submissions for Trips and Users.
+
+/*leetcode 595. Big Countries
+A country is big if:
+it has an area of at least three million (i.e., 3000000 km2), or
+it has a population of at least twenty-five million (i.e., 25000000).
+Write an SQL query to report the name, population, and area of the big countries.
+Return the result table in any order.
+The query result format is in the following example.
+Output: 
++-------------+------------+---------+
+| name        | population | area    |
++-------------+------------+---------+
+| Afghanistan | 25500100   | 652230  |
+| Algeria     | 37100000   | 2381741 |
++-------------+------------+---------+*/
+SELECT name "name", population "population", area "area"
+FROM world
+WHERE area >= 3000000
+OR population >= 25000000;
+--Runtime: 551 ms, faster than 47.47% of Oracle online submissions for Big Countries.
+
+
+  
