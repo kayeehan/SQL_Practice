@@ -483,6 +483,46 @@ FROM world
 WHERE area >= 3000000
 OR population >= 25000000;
 --Runtime: 551 ms, faster than 47.47% of Oracle online submissions for Big Countries.
+/*leetcode 620. Not Boring Movies
+Write an SQL query to report the movies with an odd-numbered ID and a description that is not "boring".
+Return the result table ordered by rating in descending order.
+The query result format is in the following example.
+Output: 
++----+------------+-------------+--------+
+| id | movie      | description | rating |
++----+------------+-------------+--------+
+| 5  | House card | Interesting | 9.1    |
+| 1  | War        | great 3D    | 8.9    |
++----+------------+-------------+--------+
+Explanation: 
+We have three movies with odd-numbered IDs: 1, 3, and 5. The movie with ID = 3 is boring so we do not include it in the answer.
+*/
+SELECT id, movie, description, rating
+FROM cinema
+WHERE description != 'boring'
+AND mod(id,2) = 1
+ORDER BY rating desc;
+--Runtime: 714 ms, faster than 27.72% of Oracle online submissions for Not Boring Movies.
 
+/*leetcode 596. Classes More Than 5 Students
+Write an SQL query to report all the classes that have at least five students.
+Return the result table in any order.
+The query result format is in the following example.
+Output: 
++---------+
+| class   |
++---------+
+| Math    |
++---------+
+Explanation: 
+- Math has 6 students, so we include it.
+- English has 1 student, so we do not include it.
+- Biology has 1 student, so we do not include it.
+- Computer has 1 student, so we do not include it.
+*/
+ SELECT class
+FROM (SELECT distinct class, count(*) over(partition by class) cnt
+     FROM courses)
+WHERE cnt >=5;
+--Runtime: 476 ms, faster than 88.37% of Oracle online submissions for Classes More Than 5 Students.
 
-  
