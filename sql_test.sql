@@ -526,3 +526,60 @@ FROM (SELECT distinct class, count(*) over(partition by class) cnt
 WHERE cnt >=5;
 --Runtime: 476 ms, faster than 88.37% of Oracle online submissions for Classes More Than 5 Students.
 
+/*leetcode 197. Rising Temperature
+Write an SQL query to find all dates' Id with higher temperatures compared to its previous dates (yesterday).
+Return the result table in any order.
+The query result format is in the following example.
+Output: 
++----+
+| id |
++----+
+| 2  |
+| 4  |
++----+
+Explanation: 
+In 2015-01-02, the temperature was higher than the previous day (10 -> 25).
+In 2015-01-04, the temperature was higher than the previous day (20 -> 30).*/
+SELECT W1.id
+FROM weather W1
+WHERE W1.temperature > (SELECT temperature
+                    FROM weather
+                    WHERE recordDate = W1.recordDate-1);
+--Runtime: 1244 ms, faster than 19.47% of Oracle online submissions for Rising Temperature.
+
+/*leetcode 601. Human Traffic of Stadium
+Write an SQL query to display the records with three or more rows with consecutive id's, and the number of people is greater than or equal to 100 for each.
+Return the result table ordered by visit_date in ascending order.
+The query result format is in the following example.
+Output: 
++------+------------+-----------+
+| id   | visit_date | people    |
++------+------------+-----------+
+| 5    | 2017-01-05 | 145       |
+| 6    | 2017-01-06 | 1455      |
+| 7    | 2017-01-07 | 199       |
+| 8    | 2017-01-09 | 188       |
++------+------------+-----------+
+Explanation: 
+The four rows with ids 5, 6, 7, and 8 have consecutive ids and each of them has >= 100 people attended. Note that row 8 was included even though the visit_date was not the next day after row 7.
+The rows with ids 2 and 3 are not included because we need at least three consecutive ids.*/
+WITH M AS (
+    SELECT 
+        id, 
+        to_char(visit_date,'YYYY-MM-DD') visit_date, 
+        people,
+        LAG(id,2) OVER(ORDER BY visit_date) bef2,
+        LAG(id,1) OVER(ORDER BY visit_date) bef,
+        LEAD(id,1) OVER(ORDER BY visit_date) aft,
+        LEAD(id,2) OVER(ORDER BY visit_date) aft2    
+    FROM Stadium
+    WHERE people >= 100
+    ORDER BY id
+    )
+SELECT M.id, M.visit_date, M.people
+FROM M
+WHERE 
+    (M.id+1=M.aft AND M.id+2=M.aft2) OR
+    (M.id-1=M.bef AND M.id+1=M.aft) OR
+    (M.id-2=M.bef2 AND M.id-1=M.bef);
+--Runtime: 786 ms, faster than 55.04% of Oracle online submissions for Human Traffic of Stadium.
