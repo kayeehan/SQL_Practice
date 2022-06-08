@@ -583,3 +583,188 @@ WHERE
     (M.id-1=M.bef AND M.id+1=M.aft) OR
     (M.id-2=M.bef2 AND M.id-1=M.bef);
 --Runtime: 786 ms, faster than 55.04% of Oracle online submissions for Human Traffic of Stadium.
+
+/* 196. Delete Duplicate Emails
+Write an SQL query to delete all the duplicate emails, keeping only one unique email with the smallest id. Note that you are supposed to write a DELETE statement and not a SELECT one.
+After running your script, the answer shown is the Person table. The driver will first compile and run your piece of code and then show the Person table. The final order of the Person table does not matter.
+The query result format is in the following example.
+Input: 
+Person table:
++----+------------------+
+| id | email            |
++----+------------------+
+| 1  | john@example.com |
+| 2  | bob@example.com  |
+| 3  | john@example.com |
++----+------------------+
+Output: 
++----+------------------+
+| id | email            |
++----+------------------+
+| 1  | john@example.com |
+| 2  | bob@example.com  |
++----+------------------+
+Explanation: john@example.com is repeated two times. We keep the row with the smallest Id = 1.
+*/
+/*
+ Please write a DELETE statement and DO NOT write a SELECT statement.
+ Write your PL/SQL query statement below
+ */
+DELETE FROM Person
+WHERE id in
+(SELECT p1.id
+FROM Person p1, Person p2
+WHERE p1.email = p2.email
+AND p1.id > p2.id);
+
+/*511. Game Play Analysis I
+Write an SQL query to report the first login date for each player.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Activity table:
++-----------+-----------+------------+--------------+
+| player_id | device_id | event_date | games_played |
++-----------+-----------+------------+--------------+
+| 1         | 2         | 2016-03-01 | 5            |
+| 1         | 2         | 2016-05-02 | 6            |
+| 2         | 3         | 2017-06-25 | 1            |
+| 3         | 1         | 2016-03-02 | 0            |
+| 3         | 4         | 2018-07-03 | 5            |
++-----------+-----------+------------+--------------+
+Output: 
++-----------+-------------+
+| player_id | first_login |
++-----------+-------------+
+| 1         | 2016-03-01  |
+| 2         | 2017-06-25  |
+| 3         | 2016-03-02  |
++-----------+-------------+
+*/
+SELECT player_id "player_id", to_char(event_date,'yyyy-mm-dd') "first_login"
+FROM (SELECT player_id , event_date, 
+     dense_rank() over(partition by player_id order by event_date) as min_day
+    FROM Activity)
+WHERE min_day = 1;
+
+/*584. Find Customer Referee
+Write an SQL query to report the names of the customer that are not referred by the customer with id = 2.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Customer table:
++----+------+------------+
+| id | name | referee_id |
++----+------+------------+
+| 1  | Will | null       |
+| 2  | Jane | null       |
+| 3  | Alex | 2          |
+| 4  | Bill | null       |
+| 5  | Zack | 1          |
+| 6  | Mark | 2          |
++----+------+------------+
+Output: 
++------+
+| name |
++------+
+| Will |
+| Jane |
+| Bill |
+| Zack |
++------+
+*/
+SELECT name
+FROM Customer
+WHERE referee_id not in 2
+OR referee_id is null;
+
+
+/*586. Customer Placing the Largest Number of Orders
+Write an SQL query to find the customer_number for the customer who has placed the largest number of orders.
+The test cases are generated so that exactly one customer will have placed more orders than any other customer.
+The query result format is in the following example.
+Input: 
+Orders table:
++--------------+-----------------+
+| order_number | customer_number |
++--------------+-----------------+
+| 1            | 1               |
+| 2            | 2               |
+| 3            | 3               |
+| 4            | 3               |
++--------------+-----------------+
+Output: 
++-----------------+
+| customer_number |
++-----------------+
+| 3               |
++-----------------+
+Explanation: 
+The customer with number 3 has two orders, which is greater than either customer 1 or 2 because each of them only has one order. 
+So the result is customer_number 3.*/
+SELECT customer_number
+FROM (SELECT customer_number,
+     count(order_number) num
+     FROM Orders
+     GROUP BY customer_number)
+WHERE num in (SELECT max(count(order_number))
+              FROM Orders
+             GROUP BY customer_number);
+             
+             
+/*607. Sales Person
+Write an SQL query to report the names of all the salespersons who did not have any orders related to the company with the name "RED".
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+SalesPerson table:
++----------+------+--------+-----------------+------------+
+| sales_id | name | salary | commission_rate | hire_date  |
++----------+------+--------+-----------------+------------+
+| 1        | John | 100000 | 6               | 4/1/2006   |
+| 2        | Amy  | 12000  | 5               | 5/1/2010   |
+| 3        | Mark | 65000  | 12              | 12/25/2008 |
+| 4        | Pam  | 25000  | 25              | 1/1/2005   |
+| 5        | Alex | 5000   | 10              | 2/3/2007   |
++----------+------+--------+-----------------+------------+
+Company table:
++--------+--------+----------+
+| com_id | name   | city     |
++--------+--------+----------+
+| 1      | RED    | Boston   |
+| 2      | ORANGE | New York |
+| 3      | YELLOW | Boston   |
+| 4      | GREEN  | Austin   |
++--------+--------+----------+
+Orders table:
++----------+------------+--------+----------+--------+
+| order_id | order_date | com_id | sales_id | amount |
++----------+------------+--------+----------+--------+
+| 1        | 1/1/2014   | 3      | 4        | 10000  |
+| 2        | 2/1/2014   | 4      | 5        | 5000   |
+| 3        | 3/1/2014   | 1      | 1        | 50000  |
+| 4        | 4/1/2014   | 1      | 4        | 25000  |
++----------+------------+--------+----------+--------+
+Output: 
++------+
+| name |
++------+
+| Amy  |
+| Mark |
+| Alex |
++------+
+Explanation: 
+According to orders 3 and 4 in the Orders table, it is easy to tell that only salesperson John and Pam have sales to company RED, so we report all the other names in the table salesperson.
+*/
+SELECT name
+FROM SalesPerson
+WHERE name not in (SELECT s_name 
+                    FROM (SELECT s.name s_name, c.name c_name, o.*
+                    FROM SalesPerson s LEFT OUTER JOIN Orders o
+                    ON s.sales_id = o.sales_id
+                    LEFT OUTER JOIN Company c
+                    ON c.com_id = o.com_id)
+                    WHERE c_name in 'RED');
+
+
+
