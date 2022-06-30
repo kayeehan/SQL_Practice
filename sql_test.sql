@@ -767,4 +767,91 @@ WHERE name not in (SELECT s_name
                     WHERE c_name in 'RED');
 
 
+/*608. Tree Node
+Each node in the tree can be one of three types:
 
+"Leaf": if the node is a leaf node.
+"Root": if the node is the root of the tree.
+"Inner": If the node is neither a leaf node nor a root node.
+Write an SQL query to report the type of each node in the tree.
+Return the result table ordered by id in ascending order.
+The query result format is in the following example.
+
+Input: 
+Tree table:
++----+------+
+| id | p_id |
++----+------+
+| 1  | null |
+| 2  | 1    |
+| 3  | 1    |
+| 4  | 2    |
+| 5  | 2    |
++----+------+
+Output: 
++----+-------+
+| id | type  |
++----+-------+
+| 1  | Root  |
+| 2  | Inner |
+| 3  | Leaf  |
+| 4  | Leaf  |
+| 5  | Leaf  |
++----+-------+
+Explanation: 
+Node 1 is the root node because its parent node is null and it has child nodes 2 and 3.
+Node 2 is an inner node because it has parent node 1 and child node 4 and 5.
+Nodes 3, 4, and 5 are leaf nodes because they have parent nodes and they do not have child nodes.
+
+Input: 
+Tree table:
++----+------+
+| id | p_id |
++----+------+
+| 1  | null |
++----+------+
+Output: 
++----+-------+
+| id | type  |
++----+-------+
+| 1  | Root  |
++----+-------+
+Explanation: If there is only one node on the tree, you only need to output its root attributes.
+*/
+SELECT id,
+CASE when p_id is null then 'Root'
+    when id in (SELECT p_id FROM tree) then 'Inner'
+    else 'Leaf'
+    End as "type"
+FROM Tree;
+
+/*1050. Actors and Directors Who Cooperated At Least Three Times
+Write a SQL query for a report that provides the pairs (actor_id, director_id) where the actor has cooperated with the director at least three times.
+Return the result table in any order.
+The query result format is in the following example.
+
+Input: 
+ActorDirector table:
++-------------+-------------+-------------+
+| actor_id    | director_id | timestamp   |
++-------------+-------------+-------------+
+| 1           | 1           | 0           |
+| 1           | 1           | 1           |
+| 1           | 1           | 2           |
+| 1           | 2           | 3           |
+| 1           | 2           | 4           |
+| 2           | 1           | 5           |
+| 2           | 1           | 6           |
++-------------+-------------+-------------+
+Output: 
++-------------+-------------+
+| actor_id    | director_id |
++-------------+-------------+
+| 1           | 1           |
++-------------+-------------+
+Explanation: The only pair is (1, 1) where they cooperated exactly 3 times.
+*/
+SELECT actor_id, director_id
+FROM ActorDirector
+GROUP BY actor_id, director_id
+HAVING count(timestamp) >= 3;
