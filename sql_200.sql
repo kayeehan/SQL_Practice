@@ -819,4 +819,224 @@ FROM emp
 ORDER BY sal DESC OFFSET 9 ROWS
 FETCH FIRST 2 ROWS ONLY;
 
+--058 : 여러 테이블의 데이터를 조인해서 출력 (EQUI JOIN)
+--사원 테이블과 부서 테이블을 조인하여 이름과 부서 위치 출력
+SELECT ename, loc
+FROM emp, dept
+WHERE emp.deptno = dept.deptno;
+
+--where절에 부서번호가 같다는 조건을 주지 않으면 n x m 개가 출력됨
+SELECT ename, loc
+FROM emp, dept;
+
+--사원 테이블과 부서 테이블을 조인하여 이름과 부서 위치 출력, job이 ANALYST인 사원들만 출력
+SELECT ename, loc, job
+FROM emp, dept
+WHERE emp.deptno = dept.deptno 
+AND emp.job = 'ANALYST';
+
+SELECT ename, loc, job, deptno
+FROM emp, dept
+WHERE emp.deptno = dept.deptno 
+AND emp.job = 'ANALYST'; --오류 발생 : deptno의 정의가 애매함. 테이블명을 접두어로 사용해야함.
+
+SELECT ename, loc, job, emp.deptno
+FROM emp, dept
+WHERE emp.deptno = dept.deptno 
+AND emp.job = 'ANALYST';
+
+--테이블 별칭으로 조인 코드 간결하게 작성
+SELECT e.ename, d.loc, e.job
+FROM emp e, dept d
+WHERE e.deptno = d.deptno 
+AND e.job = 'ANALYST';
+
+SELECT emp.ename, d.loc, e.job
+FROM emp e, dept d
+WHERE e.deptno = d.deptno 
+AND e.job = 'ANALYST'; --오류발생 : emp 테이블을 e라고 별칭했으므로 이를 따라야함.
+
+--059 : 여러 테이블의 데이터를 조인해서 출력 (NON EQUI JOIN)
+--사원 테이블과 급여 등급 테이블을 조인하여 이름, 월급, 급여 등급을 출력
+SELECT e.ename, e.sal, s.grade
+FROM emp e, salgrade s
+WHERE e.sal between s.losal and s.hisal;
+
+--060 : 여러 테이블의 데이터를 조인해서 출력 (OUTER JOIN)
+--사원과 부서 테이블을 조인하여 이름과 부서 위치 출력, Boston(ename이 null값)도 같이 출력
+SELECT e.ename, d.loc
+FROM emp e, dept d
+WHERE e.deptno(+) = d.deptno;
+
+--061 : 여러 테이블의 데이터를 조인해서 출력 (SELF JOIN)
+--사원 테이블 자기 자신의 테이블과 조인하여 직업이 salesman인 이름, 직업, 해당 사원의 관리자 이름과 관리자 직업 출력
+SELECT e.ename as 사원, e.job as 직업, m.ename as 관리자, m.job as 직업
+FROM emp e, emp m
+WHERE e.mgr = m.empno
+AND e.job = 'SALESMAN';
+
+--062 : 여러 테이블의 데이터를 조인해서 출력 (ON절)
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc as 부서위치
+FROM emp e JOIN dept d
+ON (e.deptno = d.deptno)
+WHERE e.job = 'SALESMAN';
+
+--063 : 여러 테이블의 데이터를 조인해서 출력(USING절)
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc as 부서위치
+FROM emp e join dept d
+USING (deptno)
+WHERE e.job = 'SALESMAN';
+
+--064 : 여러 테이블의 데이터를 조인해서 출력 (NATURAL JOIN)
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc as 부서위치
+FROM emp e natural join dept d
+WHERE e.job = 'SALESMAN'; --둘다 존재하는 동일한 컬럼을 기반으로 암시적인 조인 수행
+
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc as 부서위치
+FROM emp e natural join dept d
+WHERE e.job = 'SALESMAN'
+AND e.deptno = 30; --오류 발생 : 조인의 연결고리가 되는 컬럼인 deptno은 테이블명을 별칭 없이 기술해야함.
+
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc as 부서위치
+FROM emp e natural join dept d
+WHERE e.job = 'SALESMAN'
+AND deptno = 30;
+
+--065 : 여러 테이블의 데이터를 조인해서 출력 (LEFT/RIGHT OUTER JOIN)
+--이름, 직업, 월급, 부서 위치 출력 (emp가 null값인 boston까지 출력)
+SELECT e.ename as 이름, e.job 직업, e.sal 월급, d.loc 부서위치
+FROM emp e RIGHT OUTER JOIN dept d
+ON (e.deptno = d.deptno);
+
+INSERT INTO emp(empno, ename, sal, job, deptno)
+        VALUES (8282, 'JACK', 3000, 'ANALYST', 50) ;
+
+--left outer join 수행
+SELECT e.ename 이름, e.job 직업, e.sal 월급, d.loc 부서위치
+FROM emp e LEFT OUTER JOIN dept d
+ON (e.deptno = d.deptno);
+
+--066 : 여러 테이블의 데이터를 조인해서 출력 (FULL OUTER JOIN)
+--FULL OUTER 조인 방법으로 이름, 직업 월급, 부서 위치 출력
+SELECT e.ename as 이름, e.job as 직업, e.sal as 월급, d.loc 부서위치
+FROM emp e FULL OUTER JOIN dept d
+ON (e.deptno = d.deptno);
+
+--full outer join을 사용하지 않고 동일한 결과 출력
+SELECT e.ename 이름, e.job 직업, e.sal 월급, d.loc 부서위치
+FROM emp e LEFT OUTER JOIN dept d
+ON (e.deptno = d.deptno)
+UNION
+SELECT e.ename, e.job, e.sal, d.loc
+FROM emp e RIGHT OUTER JOIN dept d
+ON (e.deptno = d.deptno);
+
+--067 : 집합 연산자로 데이터를 위아래로 연결 (UNION ALL)
+--부서번호와 부서번호별 토탈 월급을 출력하는데, 맨 아래쪽 행에 토탈 월급을 출력
+SELECT deptno, SUM(sal)
+FROM emp
+GROUP BY deptno
+UNION ALL
+SELECT TO_NUMBER(null) as deptno, SUM(sal)
+FROM emp;
+
+/*-union all 위쪽 쿼리와 아래쪽 쿼리 컬럼의 개수가 동일
+-union all 위쪽 쿼리와 아래쪽 쿼리 컬럼의 데이터 타입이 동일
+-결과로 출력되는 컬럼명은 위쪽 쿼리의 컬럼명으로 출력
+-order by절은 제일 아래쪽 쿼리에만 작성할 수 있음.
+*/
+
+DROP TABLE A;
+DROP TABLE B;
+
+CREATE TABLE A (COL1 NUMBER(10) );
+INSERT INTO A VALUES(1);
+INSERT INTO A VALUES(2);
+INSERT INTO A VALUES(3);
+INSERT INTO A VALUES(4);
+INSERT INTO A VALUES(5);
+commit;
+
+CREATE TABLE B (COL1 NUMBER(10) );
+INSERT INTO A VALUES(3);
+INSERT INTO A VALUES(4);
+INSERT INTO A VALUES(5);
+INSERT INTO A VALUES(6);
+INSERT INTO A VALUES(7);
+commit;
+
+--A테이블과 B테이블의 합집합 출력
+SELECT col1 FROM a
+UNION ALL
+SELECT col1 FROM b;
+
+--068 : 집합 연산자로 데이터를 위아래로 연결 (UNION)
+--부서 번호와 부서번호별 토탈 월급을 출력, 맨 아래 행에 토탈 월급을 출력
+SELECT deptno, SUM(sal)
+FROM emp
+GROUP BY deptno
+UNION
+SELECT null as deptno, SUM(sal)
+FROM emp;
+
+/*union 연산자가 union all과 다른 점
+-중복된 데이터를 하나의 고유한 값으로 출력
+-첫 번째 컬럼의 데이터를 기준으로 내림차순으로 정렬하여 출력
+*/
+
+DROP  TABLE   C;
+DROP  TABLE   D;
+
+CREATE TABLE C (COL1 NUMBER(10) );
+INSERT INTO C VALUES(1);
+INSERT INTO C VALUES(2);
+INSERT INTO C VALUES(3);
+INSERT INTO C VALUES(4);
+INSERT INTO C VALUES(5);
+COMMIT;
+
+CREATE TABLE D (COL1 NUMBER(10) );
+INSERT INTO D VALUES(3);
+INSERT INTO D VALUES(4);
+INSERT INTO D VALUES(5);
+INSERT INTO D VALUES(6);
+INSERT INTO D VALUES(7);
+COMMIT;
+
+SELECT col1 FROM c
+UNION 
+SELECT col1 FROM D;
+
+--069 : 집합 연산자로 데이터의 교집합 출력 (intersect)
+--부서 번호 10번, 20번인 사원들을 출력하는 쿼리의 결과와 부서번호 20번, 30번을 출력하는 쿼리 결과의 교집합을 출력
+SELECT ename, sal, job, deptno
+FROM emp
+WHERE deptno in (10,20)
+INTERSECT
+SELECT ename, sal, job, deptno
+FROM emp
+WHERE deptno in (20,30); --교집합인 20번 데이터 출력
+
+DROP TABLE  E;
+DROP TABLE  F;
+
+CREATE TABLE E (COL1 NUMBER(10) );
+INSERT INTO E VALUES(1);
+INSERT INTO E VALUES(2);
+INSERT INTO E VALUES(3);
+INSERT INTO E VALUES(4);
+INSERT INTO E VALUES(5);
+COMMIT;
+
+CREATE TABLE F (COL1 NUMBER(10) );
+INSERT INTO F VALUES(3);
+INSERT INTO F VALUES(4);
+INSERT INTO F VALUES(5);
+INSERT INTO F VALUES(6);
+INSERT INTO F VALUES(7);
+COMMIT;
+
+SELECT col1 FROM e
+INTERSECT
+SELECT col1 FROM f;.
 
