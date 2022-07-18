@@ -1040,3 +1040,321 @@ SELECT col1 FROM e
 INTERSECT
 SELECT col1 FROM f;.
 
+--070 : 집합 연산자로 데이터의 차이 출력 (MINUS)
+--부서 번호 10번, 20번을 출력하는 쿼리에서 부서 번호 20번, 30버을 출력하는 쿼리의 결과 차이 출력
+SELECT ename, sal, job, deptno
+FROM emp
+WHERE deptno in (10,20)
+MINUS
+SELECT ename, sal, job, deptno
+FROM emp
+WHERE deptno in (20,30);
+--결과 데이터를 내림차순 정렬, 중복 제거
+
+--071 : 서브 쿼리 사용 (단일행 서브쿼리)
+--Jones보다 더 많은 월급을 받는 사원들의 이름과 월급 출력
+SELECT ename, sal
+FROM emp
+WHERE sal > (SELECT sal
+            FROM emp
+            WHERE UPPER(ename)='JONES');
+
+--Scott과 동일한 월급을 받는 사원들의 이름과 월급 출력(scott은 제외)
+SELECT ename, sal
+FROM emp
+WHERE sal = (SELECT sal
+            FROM emp
+            WHERE ename='SCOTT')
+AND ename != 'SCOTT';
+
+--072 : 서브 쿼리 사용(다중 행 서브쿼리)
+--직업이 SALESMAN인 사원들과 같은 월급을 받는 사원들의 이름과 월급 출력
+SELECT ename, sal
+FROM emp
+WHERE sal in (SELECT sal
+            FROM emp
+            WHERE job = 'SALESMAN');
+
+/*
+>all : 리스트에서 가장 큰 값보다 크다
+>any : 리스트에서 가장 작은 값보다 크다
+<all : 리스트에서 가장 작은 값보다 작다
+<any : 리스트에서 가장 큰 값보다 작다
+*/
+
+--074 : 서브 쿼리 사용 (EXISTS, NOT EXISTS)
+--부서 테이블에 있는 부서 번호 중 사원 테이블에도 존재하는 부서 번호의 부서번호, 부서명, 부서위치 출력
+SELECT *
+FROM dept d
+WHERE EXISTS (SELECT *
+            FROM emp
+            WHERE deptno = d.deptno);
+
+--부서 테이블 중 emp 테이블에 존재하지 않는 데이터 출력 
+SELECT *
+FROM dept d
+WHERE NOT EXISTS (SELECT *
+                FROM emp e
+                WHERE e.deptno = d.deptno);
+
+--075 : 서브쿼리 사용 (HAVING절의 서브 쿼리)
+--직업과 직업별 토탈 월급 출력, 직업이 SALESMAN인 사원들의 토탈 월급보다 더 큰 값들만 출력
+SELECT job, SUM(sal)
+FROM emp
+GROUP BY job
+HAVING SUM(sal) > (SELECT SUM(sal)
+                    FROM emp
+                    WHERE job = 'SALESMAN'); --where절 사용시 에러 발생
+
+/*
+SELECT : 스칼라 서브 쿼리
+FROM : IN LINE VIEW
+WHERE : 서브 쿼리
+GROUP BY : 서브쿼리 불가능
+HAVING : 서브 쿼리
+ORDER BY : 스칼라 서브 쿼리
+*/
+
+--076 : 서브 쿼리 사용 (FROM절의 서브 쿼리)
+--이름과 월급과 순위를 출력하는데 순위가 1위인 사원만 출력
+SELECT ename, sal, RANK() OVER(order by sal desc) 순위
+FROM emp
+WHERE 순위 = 1; --오류 발생
+
+SELECT ename, sal, 순위
+FROM (SELECT ename, sal, RANK() OVER(order by sal desc) 순위
+    FROM emp)
+WHERE 순위 = 1;
+
+--077 : 서브 쿼리 사용 (SELECT절의 서브 쿼리)
+--직업이 SALESMAN인 사원들의 이름과 월급 출력, 직업이 SALESMAN인 사원들의 최대월급과 최소월급도 같이 출력
+SELECT ename, sal, max(sal), min(sal)
+FROm emp
+WHERE job='SALESMAN'; --오류 발생 : 단일 그룹의 그룹함수가 아님
+
+SELECT ename, sal, (SELECT MAX(sal) FROM emp WHERE job = 'SALESMAN') 최대월급,
+        (SELECT MIN(sal) FROM emp WHERE job = 'SALESMAN') 최소월급
+FROM emp
+WHERE job='SALESMAN';
+
+--078 : 데이터 입력 (INSERT)
+--사원 테이블에 데이터를 입력하는데 사원번호 2812, 사원이름 JACK, 월급 3500, 입사일 2019년 6월 5일, 직업 ANALYST
+INSERT INTO emp (empno, ename, sal, hiredate, job)
+VALUES (2812, 'JACK', 3500, TO_DATE('2019/06/05','RRRR/MM/DD'), 'ANALYST');
+
+/* insert ino 다음에 괄호로 컬럼명을 기술하지 않으면, 전체 컬럼의 모두 데이터를 입력해야함.
+
+DML문
+INSERT
+UPDATE
+DELETE
+MERGE : 데이터 입력, 수정, 삭제를 한번에 수행
+*/
+
+--079 : 데이터 수정(UPDATE)
+--Scott의 월급을 3200으로 수정
+UPDATE emp
+SET sal = 3200
+WHERE ename='SCOTT';
+--where절에 제한 조건을 기술하지 않는 경우 테이블의 모든 월급이 3200으로 갱신됨.
+
+UPDATE emp
+SET sal = 3200, comm = 200
+WHERE ename='SCOTT'; -- SET절에 변경할 컬럼을 콤마로 작성하여 동시에 변경 가능
+
+--scott의 월급을 king의 월급으로 변경
+UPDATE emp
+SET sal = (SELECT sal FROM emp WHERE ename='KING')
+WHERE ename='SCOTT';
+
+/*
+UPDATE : 서브 쿼리 가능
+SET : 서브 쿼리 가능
+WHERE : 서브 쿼리 가능
+*/
+
+--080 : 데이터 삭제 (DELETE, TRUNCATE, DROP)
+--사원 테이블에서 SCOTT의 행 데이터 삭제
+DELETE FROM emp
+WHERE ename='SCOTT';
+
+/*
+DELETE : 데이터 삭제/저장공간 남김/저장구조 남김/취소 가능/플래쉬백 가능
+TRUNCATE : 데이터 삭제/저장공간 삭제/저장구조 남김/취소 불가능/플래쉬백 불가능
+DROP : 데이터 삭제/저장공간 삭제/저장구조 삭제/취소 불가능/플래쉬백 가능
+*/
+
+--테이블은 삭제하고 구조는 남겨두는 것
+TRUNCATE TABLE emp;
+
+--테이블 전체를 삭제 rollback불가능하지만 플래쉬백으로 복구 가능
+DROP TABLE emp;
+
+/* DDL문 (암시적 commit 발생)
+CREATE : 객체 생성
+ALTER : 객체 수정
+DROP : 객체 삭제
+TRUNCATE : 객체 삭제
+RENAME : 객체 이름 변경
+*/
+
+--081 : 데이터 저장 및 취소(COMMIT, ROLLBACK)
+INSERT INTO emp(empno, ename, sal, deptno)
+VALUES(1122,'JACK',3000,20);
+
+COMMIT;
+
+UPDATE emp
+SET sal = 4000
+WHERE ename='SCOTT';
+
+ROLLBACK;
+/* TCL(Transaction Control Language)
+COMMIT : 모든 변경 사항을 데이터베이스에 반영
+ROLLBACK : 모든 변경 사항을 취소
+SAVEPOINT : 특정 지점까지의 변경을 취소
+*/
+
+--082 : 데이터 입력, 수정, 삭제 한번에 (MERGE)
+/*사원 테이블에 부서 위치 컬럼 추가, 부서 테이블을 이용하여 해당 사원의 부서 위치로 값이 갱신되도록 함.
+만약 부서 테이블에는 존재하는 부서인데 사원 테이블에 없는 부서 번호라면 새롭게 사원 테이블에 입력되도록 함.
+*/
+ALTER TABLE emp
+ADD loc varchar2(10);
+
+MERGE INTO emp e
+USING dept d
+ON (e.deptno = d.deptno)
+WHEN MATCHED THEN --merge update 절
+UPDATE set e.loc = d.loc
+WHEN NOT MATCHED THEN --merge insert 절
+INSERT (e.empno, e.deptno, e.loc) VALUES (1111,d.deptno,d.loc);
+
+SELECT *
+FROM emp;
+
+--merge문을 사용하지 않을때
+UPDATE emp e
+SET loc = (SELECT loc
+            FROM dept d
+            WHERE e.deptno = d.deptno);
+
+--083 : 락(LOCK) 이해하기
+/*같은 데이터를 동시에 갱신할 수 없도록 하는 락
+UPDATE를 수행하면 대상이되는 행을 락함.
+터미널 1에서 커밋을 수행하면 터미널 2에서 해당 컬럼으로 수정 가능함.
+*/
+
+--084 : SELECT FOR UPDATE절 이해
+SELECT ename, sal, deptno
+FROM emp
+WHERE ename='JONES'
+FOR UPDATE;
+COMMIT;
+/*위 쿼리는 검색하는 행에 락을 거는 SQL문
+commit전에 다른 터미널에서 update를 수행하면 락이 걸려 변경이 되지 않고 waiting하게 됨.
+commit 시행 후 lock이 해제되며 터미널2의 update문이 수행됨.
+*/
+
+--085 : 서브 쿼리를 사용하여 데이터 입력
+--emp테이블의 구조를 복제해 emp2테이블을 만들고 부서번호가 10번인 사원들의 사번, 이름, 월급, 부서번호를 한 번에 입력
+CREATE TABLE emp2
+as
+SELECT *
+FROM emp
+WHERE 1=2;
+
+INSERT INTO emp2(empno, ename, sal, deptno)
+SELECT empno, ename, sal, deptno
+FROM emp
+WHERE deptno = 10;
+
+--086 : 서브 쿼리를 사용하여 데이터 수정
+--직업이 SALESMAN인 사원들의 월급을 ALLEN의 월급으로 변경
+UPDATE emp
+SET sal = (SELECT sal
+            FROM emp
+            WHERE ename='ALLEN')
+WHERE job='SALESMAN';
+
+--여러 개의 컬럼들을 기술하여 한 번에도 갱신 가능
+UPDATE emp
+SET (sal,comm) = (SELECT sal, comm
+                FROM emp
+                WHERE ename='ALLEN')
+WHERE ename='SCOTT';
+
+--087 : 서브 쿼리를 사용하여 데이터 삭제
+--Scott보다 더 많은 월급을 받는 사원들 삭제
+DELETE FROM emp
+WHERE sal > (SELECT sal
+            FROM emp
+            WHERE ename='SCOTT');
+
+--월급이 해당 사원이 속한 부서 번호의 평균 월급보다 크면 삭제하는 서브 쿼리를 사용한 DELETE문
+DELETE FROM emp m
+WHERE sal > (SELECT avg(sal)
+            FROM emp s
+            WHERE s.deptno = m.deptno);
+            
+--088 : 서브쿼리를 사용하여 데이터 합치기
+--부서 테이블에 숫자형으로 sumsal 컬럼 추가, 사원 테이블을 이용하여 sumsal컬럼의 데이터를 부서 테이블의 부서 번호별 토탈 월급으로 갱신
+ALTER TABLE dept
+ADD sumsal number(10);
+
+MERGE INTO dept d
+USING (SELECT deptno, SUM(sal) sumsal
+        FROM emp
+        GROUP BY deptno) v
+ON (d.deptno = v.deptno)
+WHEN MATCHED THEN --부서번호가 일치하는지 확인하여 토탈월급으로 값 갱신
+UPDATE set d.sumsal = v.sumsal;
+
+--update문으로 수행한 쿼리
+UPDATE dept d
+SET sumsal = (SELECT SUM(sal)
+            FROM emp e
+            WHERE e.deptno = d.deptno);
+            
+--089 : 계층형 질의문으로 서열을 주고 데이터 출력
+--계층형 질의문을 이용하여 사원 이름, 월급, 직업을 출력하고 사원들 간의 서열(LEVEL)을 같이 출력
+SELECT rpad(' ',level*3) || ename as employee, level, sal, job
+FROM emp
+START WITH ename = 'KING' --루트 노드(최상위 노드)의 데이터를 지정. 
+CONNECT BY prior empno = mgr; --부모와 자식 노드들 간의 관계 지정. prior을 두고 왼쪽: 부모노드, 오른쪽: 자식노드
+
+--090 : 계층형 질의문으로 서열을 주고 데이터 출력
+--계층형 질의문을 이용하여 사원 이름, 월급, 직업을 출력하고 사원들 간의 서열(LEVEL)을 같이 출력(BLAKE와 BLAKE 직속 부하들은 출력X)
+SELECT rpad(' ',level*3)||ename as employee, level, sal, job
+FROM emp
+START WITH ename='KING'
+CONNECT BY prior empno = mgr
+AND ename != 'BLAKE';
+
+--091 : 계층형 질의문으로 서열을 주고 데이터 출력
+--계층형 질의문을 이용하여 사원 이름, 월급, 직업을 서열과 같이 출력, 서열 순위를 유지하면서 월급이 높은 사원부터 출력
+SELECT rpad(' ',level*3)||ename as employee, level, sal, job
+FROM emp
+START WITH ename='KING'
+CONNECT BY prior empno=mgr
+ORDER SIBLINGS BY sal desc; 
+--siblings을 사용하지 않을 경우 월급이 높은 순서대로만 출력되며 서열순서가 섞임
+SELECT rpad(' ',level*3)||ename as employee, level, sal, job
+FROM emp
+START WITH ename='KING'
+CONNECT BY prior empno=mgr
+ORDER BY sal desc;
+
+--092 : 계층형 질의문으로 서열을 주고 데이터 출력
+--계층형 질의문과 SYS_CONNECT_BY 함수를 이용하여 서열 순서를 가로로 출력
+SELECT ename, SYS_CONNECT_BY_PATH(ename,'/') as path
+FROM emp
+START WITH ename='KING'
+CONNECT BY prior empno = mgr;
+
+SELECT ename, LTRIM(SYS_CONNECT_BY_PATH(ename,'/'),'/') as path --앞에 '/'을 제거하고 출력
+FROM emp
+START WITH ename='KING'
+CONNECT BY prior empno = mgr;
+
+--093 : 일반 테이블 생성
