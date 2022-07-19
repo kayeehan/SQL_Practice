@@ -1357,4 +1357,336 @@ FROM emp
 START WITH ename='KING'
 CONNECT BY prior empno = mgr;
 
---093 : 일반 테이블 생성
+--093 : 일반 테이블 생성(CREATE TABLE)
+--사원 번호, 이름, 월급, 입사일을 저장할 수 있는 테이블 생성
+CREATE TABLE emp01
+(empno number(10),
+ename varchar2(10),
+sal number(10,2),
+hiredate date);
+
+/* 테이블 명과 컬럼 명 지정 시 규칙
+-반드시 문자로 시작
+-이름의 길이는 30자 이하
+-대문자 알파벳과 소문자 알파벳과 숫자를 포함
+-특수문자는 $,_,#만 포함할 수 있음 */
+
+--094 : 임시 테이블 생성 (CREATE TEMPORARY TABLE)
+--사원 번호, 이름, 월급을 저장할 수 있는 테이블을 생성하는데 COMMIT할 때까지만 데이터를 저장할 수 있도록 생성
+CREATE GLOBAL TEMPORARY TABLE emp37
+(EMPNO NUMBER(10),
+ENAME VARCHAR2(10),
+SAL NUMBER(10))
+ON COMMIT DELETE ROWS;
+/*ON COMMIT DELETE ROWS : 임시 테이블에 데이터를 입력하고 COMMIT할 때까지만 데이터를 보관
+ON COMMIT PRESERVE ROWS : 임시 테이블에 데이터를 입력하고 세션이 종료될 때까지 데이터를 보관
+*/
+INSERT INTO emp37 values(1111,'scott',3000);
+INSERT INTO emp37 values(2222,'smith',4000);
+SELECT * FROM emp37;
+commit;
+SELECT * FROM emp37; --조회되지 않음.
+
+CREATE GLOBAL TEMPORARY TABLE emp38
+(EMPNO NUMBER(10),
+ENAME VARCHAR2(10),
+SAL NUMBER(10))
+ON COMMIT PRESERVE ROWS;
+
+INSERT INTO emp38 VALUES(1111,'scott',3000);
+INSERT INTO emp38 values(2222,'smith',4000);
+SELECT * FROM emp38;
+commit;
+SELECT * FROM emp38; --조회됨.
+
+--exit 후 재조회하면 조회되지 않음.
+
+--095 : 복잡한 쿼리를 단순하게 하기(VIEW)
+--직업이 SALESMAN인 사원들의 사원 번호, 이름, 월급, 직업, 부서번호를 출력하는 VIEW를 생성
+CREATE VIEW EMP_VIEW
+AS
+SELECT empno, ename, sal, job, deptno
+FROM emp
+WHERE job='SALESMAN';
+
+SELECT * FROM emp_view;
+--emp 컬럼의 일부 컬럼들만 볼 수 있음. 보안상 공개하면 안 되는 데이터들이 있을 때 유용.
+
+UPDATE emp_view 
+SET sal=0 
+WHERE ename='MARTIN';
+
+SELECT empno, ename, sal, job, deptno
+FROM emp
+WHERE job='SALESMAN'; --view뿐만 아니라 원본 데이터인 emp 테이블도 변경됨.
+
+--096 : 복잡한 쿼리를 단순하게 하기 (VIEW)
+--부서 번호와 부서 번호별 평균 월급을 출력하는 VIEW를 생성
+CREATE VIEW emp_view2
+AS
+SELECT deptno, round(avg(sal)) 평균월급 --뷰 생성시 함수나 그룹 함수를 작성할 때는 반드시 컬럼 별칭을 사용해야함.
+FROM emp
+GROUP BY deptno;
+
+SELECT * FROM emp_view2;
+
+--emp_view2의 결과 데이터 중 30번 부서 번호의 평균 월급을 1567에서 3000으로 변경
+UPDATE emp_view2
+SET 평균월급=3000
+WHERE deptno=30; --오류 발생 : 실제 테이블의 데이터가 변경되어야 하는데 그룹 함수를 쿼리하는 복합 뷰는 수정이 되지 않음.
+
+--복합 뷰를 이용하면 쿼리를 단순하게 작성할 수 있다는 장점이 있음
+SELECT e.ename, e.sal, e.deptno, v.평균월급
+FROM emp e, (SELECT deptno, round(avg(sal)) 평균월급
+            FROM emp
+            GROUP BY deptno) v
+WHERE e.deptno = v.deptno
+AND e.sal > v.평균월급;
+--위 쿼리를 아래와 같이 간단하게 사용 가능
+SELECT e.ename, e.sal, e.deptno, v.평균월급
+FROM emp e, emp_view2 v
+WHERE e.deptno = v.deptno
+AND e.sal > v.평균월급;
+
+--097 : 데이터 검색 속도 높이기 (INDEX)
+--월급을 조회할 때 검색 속도를 높이기 위해 월급에 인덱스를 생성
+CREATE INDEX emp_sal
+ON emp(sal);
+
+SELECT ename, sal
+FROM emp
+WHERE sal = 1600;
+--emp_sal 이라는 인덱스는 컬럼값과 ROWID로 구성. 컬럼값은 sal 기준으로 내림차순으로 정렬하고 있으므로 찾는 속도가 더 빠름
+
+--098 : 절대로 중복되지 않는 번호 만들기 (SEQUENCE)
+--숫자 1번부터 100번까지 출력하는 시퀀스 생성
+CREATE SEQUENCE seq1 --seq1 이름의 시퀀스 생성
+START WITH 1 -- 첫 시작 숫자 1로 지정
+INCREMENT BY 1 -- 증가치를 1로 지정
+MAXVALUE 100 --시퀀스에서 출력될 최대 숫자를 100으로 지정
+NOCYCLE; --최대 숫자까지 출력된 이후에 다시 처음 1번부터 번호를 생성할지 여부
+
+--시퀀스는 일련 번호 생성기로 번호를 순서대로 생성하는 데이터베이스 오브젝트
+CREATE TABLE EMP02
+(EMPNO NUMBER(10),
+ENAME VARCHAR2(10),
+SAL NUMBER(10));
+
+INSERT INTO EMP02 VALUES(SEQ1.NEXTVAL, 'JACK', 3500);
+INSERT INTO EMP02 VALUES(SEQ1.NEXTVAL, 'JAMES', 4500);
+
+SELECT * FROM EMP02;
+
+--099 : 실수로 지운 데이터 복구 (FLASHBACK QUERY)
+--사원 테이블의 5분 전 KING 데이터 검색
+SELECT *
+FROM EMP
+AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '5' MINUTE) --현재 시간에서 5분을 뺀 시간
+WHERE ENAME='KING';
+
+SELECT ename, sal
+FROM emp
+WHERE ename = 'KING';
+
+UPDATE emp
+SET SAL = 0
+WHERE ename='KING';
+
+COMMIT;
+
+SELECT ename, sal
+FROM emp
+AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '5' MINUTE)
+WHERE ename='KING';
+
+--직접 시간을 입력해서 조회하는 것도 가능
+SELECT ename, sal
+FROM emp
+AS OF TIMESTAMP TO_TIMESTAMP('22/07/18 21:18:38','YY/mm/dd HH24:MI:SS')
+WHERE ename='KING';
+
+--테이블을 플래쉬백 할수 있는 골든타임은 15분
+SELECT name, value
+FROM V$PARAMETER
+WHERE name='undo_retention'; --900초 = 15분
+
+--100 : 실수로 지운 데이터 복구 (FLASHBACK TABLE)
+--사원 테이블을 5분 전으로 되돌리기
+ALTER TABLE emp ENABLE ROW MOVEMENT;
+
+SELECT row_movement
+FROM user_tables
+WHERE table_name = 'EMP';--ENABLED
+
+FLASHBACK TABLE emp TO TIMESTAMP (SYSTIMESTAMP - INTERVAL '5' MINUTE);
+
+FLASHBACK TABLE emp TO TIMESTAMP
+TO_TIMESTAMP('19/06/30 07:20:59', 'RR/MM/DD HH24:MI:SS');
+
+--101 : 실수로 지운 데이터 복구 (FLASHBACK DROP)
+--사원 테이블 DROP 후 휴지통에 존재하는지 확인하는 방법
+DROP TABLE emp;
+
+SELECT ORIGINAL_NAME, DROPTIME
+FROM USER_RECYCLEBIN;
+
+--DROP 된 사원 테이블을 휴지통에서 복원
+FLASHBACK TABLE emp TO BEFORE DROP;
+
+--휴지통에서 복구할 때 테이블명을 다른 이름으로 변경
+FLASHBACK TABLE emp TO BEFORE DROP RENAEM TO emp2;
+
+--102 : 실수로 지운 데이터 복구 (FLASHBACK VERSION QUERY)
+--사원 테이블의 데이터가 과거 특정 시점부터 지금까지 어떻게 변경되어 왔는지 이력 정보 출력
+SELECT ename, sal, versions_starttime, versions_endtime, versions_operation
+FROM emp
+VERSIONS BETWEEN TIMESTAMP
+TO_TIMESTAMP('2022-07-18 21:54:00', 'RRRR-MM-DD HH24:MI:SS')
+AND MAXVALUE
+WHERE ename='KING'
+ORDER BY versions_starttime;
+
+SELECT systimestamp FROM dual; --22/07/18 21:57:22.047000000 +09:00
+
+SELECT ename, sal, deptno
+FROM emp
+WHERE ename='KING';
+--KING의 월급 8000으로 변경
+UPDATE emp
+SET sal = 8000
+WHERE ename = 'KING';
+COMMIT;
+--KING의 부서 번호 20으로 변경
+UPDATE emp
+SET deptno = 20
+WHERE ename='KING';
+COMMIT;
+--KING의 데이터 변경 이력 정보 확인
+SELECT ename, sal, deptno, versions_starttime, versions_endtime, versions_operation
+FROM emp
+VERSIONS BETWEEN TIMESTAMP
+TO_TIMESTAMP('22/07/18 21:57:22','RRRR-MM-DD HH24:MI:SS')
+AND MAXVALUE
+WHERE ename='KING'
+ORDER BY versions_starttime;
+
+FLASHBACK TABLE emp TO TIMESTAMP(SYSTIMESTAMP - INTERVAL '5' MINUTE);
+
+--103 : 실수로 지운 데이터 복구 (FLASHBACK TRANSACTION QUERY)
+--사원 테이블의 데이터를 5분 전으로 되돌리기 위한 DML문 출력
+SELECT undo_sql
+FROM flashback_transaction_query
+WHERE table_owner = 'SCOTT' AND table_name = 'EMP'
+AND commit_scn between 5670632 AND 5677730
+ORDER BY start_timestamp desc;
+
+SELECT versions_startscn, versions_endscn, versions_operation, sal, deptno
+FROM emp
+VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE
+WHERE ename = 'KING'; --king 데이터 변경 이력 정보 확인
+
+UPDATE EMP
+SET sal = 0
+WHERE ename='KING';
+COMMIT;
+
+--104 : 데이터 품질 높이기 (PRIMARY KEY)
+CREATE TABLE DEPT2
+(DEPTNO NUMBER(10) CONSTRAINT DPET2_DEPNO_PK PRIMARY KEY, --중복된 데이터와 NULL값 입력 못함
+DNAME VARCHAR2(14),
+LOC VARCHAR2(10));
+
+--테이블에 생성된 제약 확인하는 방법
+SELECT a.CONSTRAINT_NAME, a.CONSTRAINT_TYPE, b.COLUMN_NAME
+FROM USER_CONSTRAINTS a, USER_CONS_COLUMNS b
+WHERE a.TABLE_NAME = 'DEPT2'
+AND a.CONSTRAINT_NAME = b.CONSTRAINT_NAME;
+
+--테이블 생성 후 제약 생성하는 방법
+CREATE TABLE DEPT2
+(DEPTNO NUMBER(10),
+DNAME VARCHAR2(13),
+LOC VARCHAR2(10));
+
+ALTER TABLE DEPT2
+ADD CONSTRAINT DEPT2_DEPTNO_PK PRIMARY KEY(DEPTNO);
+
+--105 : 데이터 품질 높이기(UNIQUE)
+CREATE TABLE DEPT3
+(DEPTNO NUMBER(10),
+DNAME VARCHAR2(14) CONSTRAINT DEPT3_DNAME_UN UNIQUE, --중복된 데이터는 제한되지만 NULL값은 입력 가능
+LOC VARCHAR2(10));
+
+--테이블에 생성된 제약 확인하는 방법
+SELECT a.CONSTRAINT_NAME, a.CONSTRAINT_TYPE, b.COLUMN_NAME
+FROM USER_CONSTRAINTS a, USER_CONS_COLUMNS b
+WHERE a.TABLE_NAME = 'DEPT3'
+AND a.CONSTRAINT_NAME = b.CONSTRAINT_NAME;
+
+--테이블 생성 후 제약 생성하는 방법
+CREATE TABLE DEPT4
+(DEPTNO NUMBER(10),
+DNAME VARCHAR2(13),
+LOC VARCHAR2(10));
+
+ALTER TABLE DEPT4
+ADD CONSTRAINT DEPT4_DNAME_UN UNIQUE(DNAME);
+
+--106 : 데이터 품질 높이기 (NOT NULL)
+CREATE TABLE DEPT5
+(DEPTNO NUMBER(10),
+DNAME VARCHAR2(14),
+LOC VARCHAR2(10) CONSTRAINT DEPT5_LOC_NN NOT NULL);
+
+--테이블 생성 후 제약 생성하는 방법. BUT, 기존 테이블 데이터 중 NULL값이 존재하지 않아야 함.
+CREATE TABLE DEPT6
+(DEPTNO NUMBER(10),
+DNAME VARCHAR2(13),
+LOC VARCHAR2(10));
+
+ALTER TABLE DEPT6
+MODIFY LOC CONSTRAINT DEPT6_LOC_NN NOT NULL;
+
+--107 : 데이터의 품질 높이기 (CHECK)
+--사원 테이블을 생성하는데, 월급이 0에서 6000사이의 데이터만 입력되거나 수정될 수 있도록 제약
+CREATE TABLE EMP6
+(EMPNO NUMBER(10),
+ENAME VARCHAR2(20),
+SAL NUMBER(10) CONSTRAINT EMP6_SAL_CK --특정 컬럼에 특정 조건의 데이터만 입력되거나 수정되도록 제한을 거는 제약
+CHECK (SAL BETWEEN 0 AND 6000));
+
+UPDATE EMP6
+SET SAL = 9000
+WHERE ENAME='CLARK'; --체크 제약조건에 위배됨.
+
+INSERT INTO EMP6 VALUES (7566, 'ADAMS',9000); --오류 발생
+
+--월급을 6000이상으로 수정하거나 입력하려면 체크 제약 삭제해야 가능
+--삭제 명령어
+ALTER TABLE EMP6
+DROP CONSTRAINT emp6_sal_ck;
+
+INSERT INTO EMP6 VALUES (7566, 'ADAMS',9000); --이제 입력 가능
+
+--108 : 데이터의 품질 높이기 (FOREIGN KEY)
+--사원 테이블의 부서 번호에 데이터를 입력할 때 부서 테이블에 존재하는 부서 번호만 입력될 수 있도록 제약 생성
+CREATE TABLE DEPT7
+(DEPTNO NUMBER(10) CONSTRAINT DEPT7_DEPTNO_PK PRIMARY KEY,
+DNAME VARCHAR2(14),
+LOC VARCHAR2(10));
+
+CREATE TABLE EMP7
+(EMPNO NUMBER(10),
+ENAME VARCHAR2(20),
+SAL NUMBER(10),
+DEPTNO NUMBER(10)
+CONSTRAINT EMP7_DEPTNO_FK REFERENCES DEPT7(DEPTNO)); --DEPT7은 부모 테이블 EMP7은 자식 테이블
+--EMP7의 DEPTNO에 데이터를 입력, 수정 할 때, DEPT7 테이블의 DEPTNO에 존재하는 부서 번호에 대해서만 가능.
+
+ALTER TABLE DEPT7
+DROP CONSTRAINT DEPT7_DEPTNO_PK; --DEPT7의 PK를 삭제되지 않음 : 자식 테이블인 EMP7에서 참조하고 있기 때문에.
+
+ALTER TABLE DEPT7
+DROP CONSTRAINT DEPT7_DEPTNO_PK CASCADE; --CASCADE 옵션을 붙이면 EMP7테이블의 FK제약도 함께 삭제 
+
+
