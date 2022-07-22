@@ -1689,4 +1689,181 @@ DROP CONSTRAINT DEPT7_DEPTNO_PK; --DEPT7의 PK를 삭제되지 않음 : 자식 테이블인 EM
 ALTER TABLE DEPT7
 DROP CONSTRAINT DEPT7_DEPTNO_PK CASCADE; --CASCADE 옵션을 붙이면 EMP7테이블의 FK제약도 함께 삭제 
 
+--109 : WITH절 사용하기 (WITH ~ AS)
+--with절을 이용하여 직업과 직업별 토탈 월급을 출력하는데 직업별 토탈 월급들의 평균값보다 더 큰 값들만 출력
+WITH JOB_SUMSAL AS (SELECT job, SUM(sal) as 토탈
+                    FROM emp
+                    GROUP BY job)
+SELECT job, 토탈
+FROM job_sumsal
+WHERE 토탈 > (SELECT avg(토탈)
+            FROM job_sumsal);
+            
+SELECT job, SUM(sal) as 토탈
+FROM emp
+GROUP BY job
+HAVING sum(sal) > (SELECT avg(sum(sal))
+                    FROM emp
+                    GROUP BY job);
+
+--110 : WITH절 사용하기 (SUBQUERY FACTORING)
+--부서 번호와 부서 번호별 토탈 월급을 출력하는데 job_sumsal의 토탈 값의 평균값에 3000을 더한 값보다 더 큰 토탈 월급 출력
+WITH job_sumsal as (SELECT job, SUM(sal) 토탈
+                    FROM emp
+                    GROUP BY job),
+    deptno_sumsal as (SELECT deptno, SUM(sal) 토탈
+                        FROM emp
+                        GROUP BY deptno
+                        HAVING sum(sal) > (SELECT AVG(토탈) + 3000
+                                            FROM job_sumsal))
+SELECT deptno, 토탈
+FROM deptno_sumsal;
+
+--111 : SQL로 알고리즘 문제 풀기(구구단 2단 출력)
+--LOop문을 sql로 구현
+WITH loop_table as (SELECT level as num
+                    FROM dual
+                    CONNECT BY level <=9)
+SELECT '2x'||num||'='||2*num as "2단"
+FROM loop_table;
+
+--112 : SQL로 알고리즘 문제 풀기(구구단 1단~9단 출력)
+SELECT num1 || 'x' || num2 || '=' || num1*num2 as "구구단"
+FROM (SELECT level+1 num1
+        FROM dual
+        CONNECT BY level <= 8),
+        (SELECT level num2
+        FROM dual
+        CONNECT BY level <= 9);
+        
+WITH loop_table AS (SELECT level+1 num1
+            FROM dual
+            CONNECT BY level <= 8),
+    num_table AS (SELECT level num2
+        FROM dual
+        CONNECT BY level <= 9)
+SELECT TO_CHAR(num1)||'x'||TO_CHAR(num2)||'='||num1*num2 as 구구단
+FROM loop_table, num_table;
+
+--113 : SQL로 알고리즘 문제 풀기(직각삼각형 출력)
+--계층형 질의문과 lpad를 이용하여 sql로 네모로 직각삼각형 그리기
+WITH loop_table as (SELECT level as num
+                    FROM dual
+                    CONNECT BY level <=8)
+SELECT lpad('■',num,'■') as triangle
+FROM loop_table;
+
+SELECT lpad('■',10,'■') as triangle
+FROM dual;
+
+--114 :  SQL로 알고리즘 문제 풀기(삼각형 출력)
+WITH loop_table as (SELECT level as num
+                    FROM DUAL
+                    CONNECT BY level <= 8)
+SELECT LPAD(' ',9-num,' ') || LPAD('■',num,'■') as triangle
+FROM loop_table;
+
+--치환변수(&)로 입력받은 숫자만큼 삼각형 출력 가능
+undefine 숫자1
+undefine 숫자2
+
+WITH loop_table as (SELECT level as num
+                    FROM dual
+                    CONNECT BY level <= &숫자1)
+SELECT LPAD(' ',&숫자2-num,' ') || LPAD('■',num,'■') as triangle
+FROM loop_table;
+
+--115 : SQL로 알고리즘 문제 풀기(마름모 출력)
+undefine p_num
+ACCEPT p_num prompt '숫자입력 : ';
+
+SELECT LPAD(' ',(&p_num)-level,' ') || RPAD('■',level,'■')
+FROM dual
+CONNECT BY level <&p_num+1
+UNION ALL
+SELECT LPAD(' ',level,' ') || RPAD('■',(&p_num)-level,'■')
+FROM dual
+CONNECT BY level <&p_num;
+
+--116 : SQL로 알고리즘 문제 풀기(사각형 출력)
+undefine p_n1
+undefine p_n2
+ACCEPT p_n1 prompt '가로 숫자를 입력하세요~';
+ACCEPT p_n2 prompt '세로 숫자를 입력하세요~';
+
+WITH loop_table AS (SELECT level as num
+                    FROM dual
+                    CONNECT BY level <= &p_n2)
+SELECT LPAD('■',&p_n1,'■')
+FROM loop_table;
+
+
+--117 : SQL로 알고리즘 문제 풀기 (1부터 10까지 숫자의 합)
+SELECT SUM(level) as 합계
+FROM dual
+CONNECT BY level <= 10;
+
+--118 : SQL로 알고리즘 문제 풀기 (1부터 10까지 숫자의 곱)
+SELECT ROUND(EXP(SUM(LN(level)))) 곱
+FROM dual
+CONNECT BY level <= 10;
+
+--119 : SQL로 알고리즘 문제 풀기 (1부터 10까지 짝수만 출력)
+SELECT level 짝수
+FROM dual
+WHERE MOD(level,2) = 0
+CONNECT BY level <= 10;
+
+--120 : SQL로 알고리즘 문제 풀기 (1부터 10까지 소수만 출력)
+undefine p_n
+ACCEPT p_n prompt '숫자에 대한 값 입력: ';
+
+WITH loop_table AS (SELECT level as num
+                    FROM dual
+                    CONNECT BY level <= &p_n)
+SELECT l1.num as 소수
+FROM loop_table l1, loop_table l2
+WHERE mod(l1.num,l2.num)=0
+GROUP BY l1.num
+HAVING count(l1.num) = 2;
+
+--121 :SQL로 알고리즘 문제 풀기(최대 공약수)
+ACCEPT p_n1 prompt '첫 번째 숫자를 입력하세요.';
+ACCEPT p_n2 prompt '두 번째 숫자를 입력하세요.';
+
+WITH num_d as (SELECT &p_n1 as num1, &p_n2 as num2
+                FROM dual)
+SELECT max(level) AS 최대공약수
+FROM num_d
+WHERE mod(num1, level) = 0
+AND mod(num2, level) = 0
+CONNECT BY level <= num2;
+
+--122 :SQL로 알고리즘 문제 풀기(최소 공배수)
+ACCEPT p_n1 prompt '첫 번째 숫자를 입력하세요.';
+ACCEPT p_n2 prompt '두 번째 숫자를 입력하세요.';
+
+WITH num_d as (SELECT &p_n1 as num1, &p_n2 as num2
+                FROM dual)
+SELECT num1, num2,
+    (num1/max(level))*(num2/max(level))*max(level) AS 최소공배수
+FROM num_d
+WHERE mod(num1, level) = 0
+AND mod(num2, level) = 0
+CONNECT BY level <= num2;
+
+--123 :SQL로 알고리즘 문제 풀기(피타고라스의 정리)
+--직각삼각형의 밑변, 높이, 빗변의 길이를 각각 입력받아 피타고라스의 직각삼각형 공식에 대입하여 여부 출력
+ACCEPT num1 prompt '밑변의 길이를 입력하세요.';
+ACCEPT num2 prompt '높이를 입력하세요.';
+ACCEPT num3 prompt '빗변의 길이를 입력하세요.';
+
+SELECT CASE WHEN
+    (POWER(&num1,2) + POWER(&num2,2)) = POWER(&num3,2)
+    THEN '직각삼각형이 맞습니다.'
+    ELSE '직각삼각형이 아닙니다.'
+    END as "피타고라스 정리"
+FROM DUAL;
+
+
 
