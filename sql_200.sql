@@ -1865,5 +1865,235 @@ SELECT CASE WHEN
     END as "피타고라스 정리"
 FROM DUAL;
 
+--124 : SQL로 알고리즘 문제 풀기(몬테가를로 알고리즘-원주율 출력)
+SELECT SUM(CASE WHEN (POWER(NUM1,2) + POWER(NUM2,2)) <= 1 THEN 1
+            ELSE 0 END) / 100000 * 4 AS 원주율
+FROM (SELECT DBMS_RANDOM.VALUE(0,1) AS NUM1,
+            DBMS_RANDOM.VALUE(0,1) AS NUM2
+            FROM DUAL
+            CONNECT BY level < 100000);
+
+--125 : SQL로 알고리즘 문제 풀기(오일러 상수 자연상수 구하기-자연상수 e값 출력)
+WITH LOOP_TABLE AS (SELECT LEVEL  AS NUM 
+                                  FROM DUAL 
+                                  CONNECT BY LEVEL <= 1000000) 
+SELECT RESULT
+FROM (SELECT NUM, POWER( (1 + 1/NUM) ,NUM) AS RESULT
+             FROM LOOP_TABLE)
+WHERE NUM = 1000000;
+
+--126 : 엑셀 데이터를 DB에 로드하는 방법
+DROP TABLE CANCER;
+
+CREATE  TABLE  CANCER
+( 암종       VARCHAR2(50),   
+  질병코드   VARCHAR2(20),
+  환자수     NUMBER(10),
+  성별       VARCHAR2(20),
+  조유병률   NUMBER(10,2),     
+  생존률    NUMBER(10,2) );
+
+SELECT *
+FROM cancer;
+
+--127 : 스티브 잡스 연설문에서 가장 많이 나오는 단어
+CREATE TABLE SPEECH
+(SPEECH_TEXT  VARCHAR2(1000));
+
+SELECT count(*) FROM speech;
+
+SELECT REGEXP_SUBSTR('I never graduated from college', '[^ ]+', 1, 2) word --문장을 어절단위로 나눔. 첫번째 어절부터 두번째 어절
+FROM dual;
+
+SELECT REGEXP_SUBSTR(lower(speech_text), '[^ ]+', 1, a) word
+FROM speech,  (SELECT level a
+                FROM dual
+                CONNECT BY level <= 52); --어절단위로 출력
+--어절 단위로 나눈 단어들을 카운트하여 가장 많이 나오는 단어순으로 정렬하는 쿼리
+SELECT word, count(*)
+FROM (SELECT REGEXP_SUBSTR(lower(speech_text), '[^ ]+', 1, a) word
+       FROM speech, (SELECT level a
+                     FROM dual
+                     CONNECT BY level <= 52))
+WHERE word is not null
+GROUP BY word
+ORDER BY count(*) desc;
+
+--128 : 스티브 잡스 연설문에는 긍정단어 혹은 부정단어가 많은지
+DROP TABLE POSITIVE;
+DROP TABLE NEGATIVE;
+
+CREATE TABLE POSITIVE (P_TEXT  VARCHAR2(2000));
+CREATE TABLE NEGATIVE (N_TEXT  VARCHAR2(2000));
+
+--127의 결과를 VIEW로 생성
+CREATE OR REPLACE  VIEW SPEECH_VIEW
+AS
+SELECT REGEXP_SUBSTR(lower(speech_text), '[^ ]+', 1, a) word
+            FROM speech, (SELECT level a
+                        FROM dual
+                        CONNECT BY level <= 52);
+--긍정단어 건수 조회
+SELECT count(word) as 긍정단어
+FROM speech_view
+WHERE lower(word) IN (SELECT lower(p_text)
+                    FROM positive );
+--부정단어 건수 조회
+SELECT count(word) as 부정단어
+FROM speech_view
+WHERE lower(word) IN (SELECT lower(n_text)
+                    FROM negative);
+
+--129 : 절도가 많이 발생하는 요일
+DROP TABLE CRIME_DAY;
+
+CREATE TABLE CRIME_DAY
+(CRIME_TYPE  VARCHAR2(50),
+SUN_CNT NUMBER(10),
+MON_CNT NUMBER(10),
+TUE_CNT NUMBER(10),
+WED_CNT NUMBER(10),
+THU_CNT NUMBER(10),
+FRI_CNT NUMBER(10),
+SAT_CNT NUMBER(10),
+UNKNOWN_CN NUMBER(10) );
+
+DROP TABLE CRIME_DAY_UNPIVOT;
+  
+CREATE TABLE CRIME_DAY_UNPIVOT
+AS
+SELECT *
+FROM CRIME_DAY
+UNPIVOT (CNT FOR DAY_CNT  IN (SUN_CNT, MON_CNT, TUE_CNT, WED_CNT,
+    THU_CNT, FRI_CNT, SAT_CNT));
+
+SELECT *
+FROM (SELECT DAY_CNT, CNT, RANK() OVER (ORDER BY CNT DESC) RNK
+      FROM CRIME_DAY_UNPIVOT
+      WHERE TRIM(CRIME_TYPE)='절도')
+WHERE RNK = 1;
+
+--130 : 우리나라에서 대학 등록금이 가장 높은 학교는 어디인가?
+DROP TABLE UNIVERSITY_FEE;
+
+CREATE TABLE UNIVERSITY_FEE
+(DIVISION VARCHAR2(20),
+TYPE VARCHAR2(20),
+UNIVERSITY VARCHAR2(60),
+LOC VARCHAR2(40),
+ADMISSION_CNT NUMBER(20),
+ADMISSION_FEE NUMBER(20),
+TUITION_FEE NUMBER(20)) ;
+
+--등록금이 가장 높은 학교 순으로 순위를 부여하여 출력
+SELECT *
+FROM (SELECT UNIVERSITY, TUITION_FEE , 
+      RANK() OVER (ORDER BY TUITION_FEE DESC NULLS LAST) 순위
+      FROM UNIVERSITY_FEE)
+WHERE 순위 =1 ;
+
+--131 : 서울시 물가 중 가장 비싼 품목과 가격
+SELECT A_NAME as "상품", A_PRICE as "가격", M_NAME as "매장명"
+FROM PRICE
+WHERE A_PRICE = (SELECT MAX(A_PRICE)
+                FROM PRICE);
+                
+--132 : 살인이 가장 많이 발생하는 장소
+SELECT *
+FROM (SELECT c_loc, cnt, rank() over (order by cnt desc)  rnk
+              FROM crime_loc
+              WHERE crime_type='살인')
+WHERE  rnk = 1;
+
+--133 : 가정 불화로 생기는 가장 큰 범죄 유형
+
+DROP TABLE CRIME_CAUSE2;
+
+CREATE  TABLE  CRIME_CAUSE2
+AS
+SELECT *
+FROM CRIME_CAUSE
+UNPIVOT ( CNT FOR TERM IN (생계형, 유흥, 도박, 허영심, 복수, 해고, 징벌, 가정불화, 호기심, 유혹, 사고, 불만, 부주의, 기타));
+
+SELECT 범죄유형
+FROM CRIME_CAUSE2
+WHERE CNT = (SELECT MAX(CNT)
+            FROM CRIME_CAUSE2
+            WHERE TERM='가정불화' )
+AND TERM='가정불화';
+
+--134 : 방화사건의 가장 큰 원인
+SELECT TERM AS 원인
+FROM CRIME_CAUSE2
+WHERE CNT = (SELECT MAX(CNT)
+            FROM CRIME_CAUSE2
+            WHERE 범죄유형='방화')
+AND 범죄유형='방화';
+
+--135 : 전국에서 교통사고가 제일 많이 발생하는 지역
+SELECT * 
+FROM (SELECT ACC_LOC_NAME AS 사고장소, ACC_CNT AS 사고건수, 
+      DENSE_RANK() OVER (ORDER BY ACC_CNT DESC NULLS LAST) AS 순위
+      FROM ACC_LOC_DATA
+       WHERE ACC_YEAR=2017)
+WHERE 순위 <= 5;
+
+--136 : 치킨집 폐업이 가장 많았던 연도
+SELECT 년도 "치킨집 폐업 년도", 치킨집 "건수"
+FROM (SELECT 년도, 치킨집, rank() over(order by 치킨집 desc) 순위 
+     FROM closing )
+WHERE 순위=1;
+
+--137 : 세계에서 근무시간이 가장 긴 나라
+DROP VIEW C_WORK_TIME;
+
+CREATE VIEW C_WORK_TIME
+AS
+SELECT *
+FROM WORKING_TIME
+UNPIVOT ( CNT FOR Y_YEAR IN ( Y_2014, Y_2015, Y_2016, Y_2017, Y_2018));
+
+SELECT COUNTRY, CNT, RANK() OVER (ORDER BY CNT DESC) 순위
+FROM C_WORK_TIME
+WHERE Y_YEAR ='Y_2018';
+
+--138 : 남자와 여자가 각각 많이 걸리는 암
+SELECT DISTINCT(암종), 성별 , 환자수
+FROM CANCER
+WHERE 환자수 = (SELECT MAX(환자수)
+               FROM CANCER
+               WHERE 성별 = '남자' AND 암종 != '모든암')
+UNION ALL
+SELECT DISTINCT(암종) , 성별 , 환자수
+FROM CANCER
+WHERE 환자수 = (SELECT MAX(환자수)
+               FROM CANCER
+               WHERE 성별 = '여자');
+
+--139 : PL/SQL 변수 이해 (두 수를 입력받아 두수의 합이 결과로 출력되게 하는 PL/SQL
+set serveroutput on --결과를 화면에 출력할때 필요한 쿼리
+accept p_num1 prompt '첫 번째 숫자를 입력하세요~ '
+accept p_num2 prompt '두 번째 숫자를 입력하세요~ '
+
+declare --변수선언
+        v_sum number(10);
+begin --실행절
+        v_sum := &p_num1 + &p_num2;
+        dbms_output.put_line('총합은: ' || v_sum); --출력
+end;
+
+--140 : PL/SQL 변수 이해 (사원번호를 입력하면 해당 사원의 월급 출력
+set serveroutput on 
+accept p_empno prompt '사원 번호를 입력하세요 ~ '
+    declare
+            v_sal number(10) ;
+    begin
+        select sal into v_sal
+        from emp
+        where empno = &p_empno;
+    dbms_output.put_line('해당 사원의 월급은 '||v_sal);
+end;
+
+
 
 
