@@ -885,19 +885,64 @@ Output:
 Explanation: 
 Note that if the number of students is odd, there is no need to change the last one's seat.
 */
-SELECT id "id", name "student"
-FROM (SELECT id, lag(student,1) over(order by student) name
-        FROM seat)
-WHERE mod(id,2) = 0
-AND name is not null
+SELECT id-1 "id", student
+FROM seat s1
+WHERE mod(s1.id,2) = 0
 UNION
-SELECT id, name
-FROM (SELECT id, lead(student,1) over(order by student) name
-        FROM seat)
-WHERE mod(id,2) = 1
-AND name is not null
+SELECT id+1 "id", student
+FROM seat s2
+WHERE mod(s2.id,2) = 1
+AND s2.id != (SELECT max(id) FROM seat)
 UNION
 SELECT id, student 
-FROM seat
-WHERE id = (SELECT max(id)
-           FROM seat);
+FROM seat s3
+WHERE s3.id = (SELECT max(id)
+           FROM seat)
+AND mod(s3.id,2) = 1;
+
+/*627. Swap Salary
+Write an SQL query to swap all 'f' and 'm' values (i.e., change all 'f' values to 'm' and vice versa) with a single update statement and no intermediate temporary tables.
+Note that you must write a single update statement, do not write any select statement for this problem.
+The query result format is in the following example.
+Input: 
+Salary table:
++----+------+-----+--------+
+| id | name | sex | salary |
++----+------+-----+--------+
+| 1  | A    | m   | 2500   |
+| 2  | B    | f   | 1500   |
+| 3  | C    | m   | 5500   |
+| 4  | D    | f   | 500    |
++----+------+-----+--------+
+Output: 
++----+------+-----+--------+
+| id | name | sex | salary |
++----+------+-----+--------+
+| 1  | A    | f   | 2500   |
+| 2  | B    | m   | 1500   |
+| 3  | C    | f   | 5500   |
+| 4  | D    | m   | 500    |
++----+------+-----+--------+
+Explanation: 
+(1, A) and (3, C) were changed from 'm' to 'f'.
+(2, B) and (4, D) were changed from 'f' to 'm'.
+*/
+UPDATE salary
+SET sex = (CASE WHEN sex = 'm'
+          THEN 'f'
+          ELSE 'm'
+          END)
+          
+/*1084. Sales Analysis III
+Write an SQL query that reports the products that were only sold in the first quarter of 2019. That is, between 2019-01-01 and 2019-03-31 inclusive.
+Return the result table in any order.
+The query result format is in the following example.
+*/
+SELECT product_id "product_id", product_name "product_name"
+FROM product
+WHERE product_id not in (SELECT product_id
+                        FROM sales
+                        WHERE sale_date Not Between '2019/01/01'
+                        AND '2019/03/31')
+AND product_id in (SELECT product_id
+                  FROM sales);
