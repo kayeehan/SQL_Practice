@@ -946,3 +946,124 @@ WHERE product_id not in (SELECT product_id
                         AND '2019/03/31')
 AND product_id in (SELECT product_id
                   FROM sales);
+                  
+/*1141. User Activity for the Past 30 Days I
+Write an SQL query to find the daily active user count for a period of 30 days ending 2019-07-27 inclusively. A user was active on someday if they made at least one activity on that day.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Activity table:
++---------+------------+---------------+---------------+
+| user_id | session_id | activity_date | activity_type |
++---------+------------+---------------+---------------+
+| 1       | 1          | 2019-07-20    | open_session  |
+| 1       | 1          | 2019-07-20    | scroll_down   |
+| 1       | 1          | 2019-07-20    | end_session   |
+| 2       | 4          | 2019-07-20    | open_session  |
+| 2       | 4          | 2019-07-21    | send_message  |
+| 2       | 4          | 2019-07-21    | end_session   |
+| 3       | 2          | 2019-07-21    | open_session  |
+| 3       | 2          | 2019-07-21    | send_message  |
+| 3       | 2          | 2019-07-21    | end_session   |
+| 4       | 3          | 2019-06-25    | open_session  |
+| 4       | 3          | 2019-06-25    | end_session   |
++---------+------------+---------------+---------------+
+Output: 
++------------+--------------+ 
+| day        | active_users |
++------------+--------------+ 
+| 2019-07-20 | 2            |
+| 2019-07-21 | 2            |
++------------+--------------+ 
+Explanation: Note that we do not care about days with zero active users.
+*/
+SELECT to_char(activity_date,'yyyy-mm-dd') "day", count(distinct user_id) "active_users"
+FROM Activity
+WHERE activity_date BETWEEN '2019-06-28'
+AND '2019-07-27'
+GROUP BY to_char(activity_date,'yyyy-mm-dd')
+HAVING count(activity_type)>0
+ORDER BY to_char(activity_date,'yyyy-mm-dd');
+
+/*1148. Article Views I
+Write an SQL query to find all the authors that viewed at least one of their own articles.
+Return the result table sorted by id in ascending order.
+The query result format is in the following example.
+Input: 
+Views table:
++------------+-----------+-----------+------------+
+| article_id | author_id | viewer_id | view_date  |
++------------+-----------+-----------+------------+
+| 1          | 3         | 5         | 2019-08-01 |
+| 1          | 3         | 6         | 2019-08-02 |
+| 2          | 7         | 7         | 2019-08-01 |
+| 2          | 7         | 6         | 2019-08-02 |
+| 4          | 7         | 1         | 2019-07-22 |
+| 3          | 4         | 4         | 2019-07-21 |
+| 3          | 4         | 4         | 2019-07-21 |
++------------+-----------+-----------+------------+
+Output: 
++------+
+| id   |
++------+
+| 4    |
+| 7    |
++------+
+*/
+SELECT distinct author_id "id"
+FROM views
+WHERE author_id = viewer_id
+ORDER BY author_id asc;
+
+/*1158. Market Analysis I
+Write an SQL query to find for each user, the join date and the number of orders they made as a buyer in 2019.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Users table:
++---------+------------+----------------+
+| user_id | join_date  | favorite_brand |
++---------+------------+----------------+
+| 1       | 2018-01-01 | Lenovo         |
+| 2       | 2018-02-09 | Samsung        |
+| 3       | 2018-01-19 | LG             |
+| 4       | 2018-05-21 | HP             |
++---------+------------+----------------+
+Orders table:
++----------+------------+---------+----------+-----------+
+| order_id | order_date | item_id | buyer_id | seller_id |
++----------+------------+---------+----------+-----------+
+| 1        | 2019-08-01 | 4       | 1        | 2         |
+| 2        | 2018-08-02 | 2       | 1        | 3         |
+| 3        | 2019-08-03 | 3       | 2        | 3         |
+| 4        | 2018-08-04 | 1       | 4        | 2         |
+| 5        | 2018-08-04 | 1       | 3        | 4         |
+| 6        | 2019-08-05 | 2       | 2        | 4         |
++----------+------------+---------+----------+-----------+
+Items table:
++---------+------------+
+| item_id | item_brand |
++---------+------------+
+| 1       | Samsung    |
+| 2       | Lenovo     |
+| 3       | LG         |
+| 4       | HP         |
++---------+------------+
+Output: 
++-----------+------------+----------------+
+| buyer_id  | join_date  | orders_in_2019 |
++-----------+------------+----------------+
+| 1         | 2018-01-01 | 1              |
+| 2         | 2018-02-09 | 2              |
+| 3         | 2018-01-19 | 0              |
+| 4         | 2018-05-21 | 0              |
++-----------+------------+----------------+
+*/
+SELECT u.user_id "buyer_id", to_char(u.join_date,'yyyy-mm-dd') "join_date", 
+        nvl(o.cnt,0) "orders_in_2019"
+FROM users u,
+    (SELECT buyer_id, count(item_id) cnt
+    FROM orders
+    WHERE to_char(order_date,'yyyy') = '2019'
+    GROUP BY buyer_id) o
+WHERE u.user_id = o.buyer_id(+);
