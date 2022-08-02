@@ -1067,3 +1067,169 @@ FROM users u,
     WHERE to_char(order_date,'yyyy') = '2019'
     GROUP BY buyer_id) o
 WHERE u.user_id = o.buyer_id(+);
+
+/*1179. Reformat Department Table
+Write an SQL query to reformat the table such that there is a department id column and a revenue column for each month.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Department table:
++------+---------+-------+
+| id   | revenue | month |
++------+---------+-------+
+| 1    | 8000    | Jan   |
+| 2    | 9000    | Jan   |
+| 3    | 10000   | Feb   |
+| 1    | 7000    | Feb   |
+| 1    | 6000    | Mar   |
++------+---------+-------+
+Output: 
++------+-------------+-------------+-------------+-----+-------------+
+| id   | Jan_Revenue | Feb_Revenue | Mar_Revenue | ... | Dec_Revenue |
++------+-------------+-------------+-------------+-----+-------------+
+| 1    | 8000        | 7000        | 6000        | ... | null        |
+| 2    | 9000        | null        | null        | ... | null        |
+| 3    | null        | 10000       | null        | ... | null        |
++------+-------------+-------------+-------------+-----+-------------+
+Explanation: The revenue from Apr to Dec is null.
+Note that the result table has 13 columns (1 for the department id + 12 for the months).
+*/
+SELECT *
+FROM (SELECT id "id", month, sum(revenue) rev
+     FROM department
+     GROUP BY id, month)
+PIVOT(max(rev) for month in ('Jan' "Jan_Revenue",'Feb' "Feb_Revenue",'Mar' "Mar_Revenue",'Apr' "Apr_Revenue",'May' "May_Revenue",'Jun' "Jun_Revenue",'Jul' "Jul_Revenue",'Aug' "Aug_Revenue",'Sep' "Sep_Revenue",'Oct' "Oct_Revenue",'Nov' "Nov_Revenue",'Dec' "Dec_Revenue"));
+
+/*1393. Capital Gain/Loss
+Write an SQL query to report the Capital gain/loss for each stock.
+The Capital gain/loss of a stock is the total gain or loss after buying and selling the stock one or many times.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Stocks table:
++---------------+-----------+---------------+--------+
+| stock_name    | operation | operation_day | price  |
++---------------+-----------+---------------+--------+
+| Leetcode      | Buy       | 1             | 1000   |
+| Corona Masks  | Buy       | 2             | 10     |
+| Leetcode      | Sell      | 5             | 9000   |
+| Handbags      | Buy       | 17            | 30000  |
+| Corona Masks  | Sell      | 3             | 1010   |
+| Corona Masks  | Buy       | 4             | 1000   |
+| Corona Masks  | Sell      | 5             | 500    |
+| Corona Masks  | Buy       | 6             | 1000   |
+| Handbags      | Sell      | 29            | 7000   |
+| Corona Masks  | Sell      | 10            | 10000  |
++---------------+-----------+---------------+--------+
+Output: 
++---------------+-------------------+
+| stock_name    | capital_gain_loss |
++---------------+-------------------+
+| Corona Masks  | 9500              |
+| Leetcode      | 8000              |
+| Handbags      | -23000            |
++---------------+-------------------+
+Explanation: 
+Leetcode stock was bought at day 1 for 1000$ and was sold at day 5 for 9000$. Capital gain = 9000 - 1000 = 8000$.
+Handbags stock was bought at day 17 for 30000$ and was sold at day 29 for 7000$. Capital loss = 7000 - 30000 = -23000$.
+Corona Masks stock was bought at day 1 for 10$ and was sold at day 3 for 1010$. It was bought again at day 4 for 1000$ and was sold at day 5 for 500$. At last, it was bought at day 6 for 1000$ and was sold at day 10 for 10000$. Capital gain/loss is the sum of capital gains/losses for each ('Buy' --> 'Sell') operation = (1010 - 10) + (500 - 1000) + (10000 - 1000) = 1000 - 500 + 9000 = 9500$.
+*/  
+SELECT stock_name "stock_name", sum(capital) "capital_gain_loss"
+FROM (SELECT stock_name, 
+    CASE 
+    WHEN operation = 'Buy' THEN -1*price
+    ELSE price END capital
+    FROM stocks)
+GROUP BY stock_name;
+
+/*1407. Top Travellers
+Write an SQL query to report the distance traveled by each user.
+Return the result table ordered by travelled_distance in descending order, if two or more users traveled the same distance, order them by their name in ascending order.
+The query result format is in the following example.
+Input: 
+Users table:
++------+-----------+
+| id   | name      |
++------+-----------+
+| 1    | Alice     |
+| 2    | Bob       |
+| 3    | Alex      |
+| 4    | Donald    |
+| 7    | Lee       |
+| 13   | Jonathan  |
+| 19   | Elvis     |
++------+-----------+
+Rides table:
++------+----------+----------+
+| id   | user_id  | distance |
++------+----------+----------+
+| 1    | 1        | 120      |
+| 2    | 2        | 317      |
+| 3    | 3        | 222      |
+| 4    | 7        | 100      |
+| 5    | 13       | 312      |
+| 6    | 19       | 50       |
+| 7    | 7        | 120      |
+| 8    | 19       | 400      |
+| 9    | 7        | 230      |
++------+----------+----------+
+Output: 
++----------+--------------------+
+| name     | travelled_distance |
++----------+--------------------+
+| Elvis    | 450                |
+| Lee      | 450                |
+| Bob      | 317                |
+| Jonathan | 312                |
+| Alex     | 222                |
+| Alice    | 120                |
+| Donald   | 0                  |
++----------+--------------------+
+Explanation: 
+Elvis and Lee traveled 450 miles, Elvis is the top traveler as his name is alphabetically smaller than Lee.
+Bob, Jonathan, Alex, and Alice have only one ride and we just order them by the total distances of the ride.
+Donald did not have any rides, the distance traveled by him is 0.
+*/
+SELECT u.name "name", nvl(r.sum_dist,0) "travelled_distance"
+FROM users u, (SELECT user_id, sum(distance) sum_dist
+              FROM rides
+              GROUP BY user_id) r
+WHERE u.id = r.user_id(+)
+ORDER BY 2 desc, 1 asc;
+
+/*1484. Group Sold Products By The Date
+Write an SQL query to find for each date the number of different products sold and their names.
+The sold products names for each date should be sorted lexicographically.
+Return the result table ordered by sell_date.
+The query result format is in the following example.
+Input: 
+Activities table:
++------------+------------+
+| sell_date  | product     |
++------------+------------+
+| 2020-05-30 | Headphone  |
+| 2020-06-01 | Pencil     |
+| 2020-06-02 | Mask       |
+| 2020-05-30 | Basketball |
+| 2020-06-01 | Bible      |
+| 2020-06-02 | Mask       |
+| 2020-05-30 | T-Shirt    |
++------------+------------+
+Output: 
++------------+----------+------------------------------+
+| sell_date  | num_sold | products                     |
++------------+----------+------------------------------+
+| 2020-05-30 | 3        | Basketball,Headphone,T-shirt |
+| 2020-06-01 | 2        | Bible,Pencil                 |
+| 2020-06-02 | 1        | Mask                         |
++------------+----------+------------------------------+
+Explanation: 
+For 2020-05-30, Sold items were (Headphone, Basketball, T-shirt), we sort them lexicographically and separate them by a comma.
+For 2020-06-01, Sold items were (Pencil, Bible), we sort them lexicographically and separate them by a comma.
+For 2020-06-02, the Sold item is (Mask), we just return it.
+*/
+SELECT to_char(sell_date,'yyyy-mm-dd') "sell_date", count(product) "num_sold", 
+listagg(product,',') within group(order by product) "products"
+FROM (SELECT distinct * FROM activities) 
+GROUP BY sell_date
+ORDER BY sell_date;
