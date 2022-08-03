@@ -1233,3 +1233,130 @@ listagg(product,',') within group(order by product) "products"
 FROM (SELECT distinct * FROM activities) 
 GROUP BY sell_date
 ORDER BY sell_date;
+
+
+/*1527. Patients With a Condition
+Write an SQL query to report the patient_id, patient_name all conditions of patients who have Type I Diabetes. Type I Diabetes always starts with DIAB1 prefix
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Patients table:
++------------+--------------+--------------+
+| patient_id | patient_name | conditions   |
++------------+--------------+--------------+
+| 1          | Daniel       | YFEV COUGH   |
+| 2          | Alice        |              |
+| 3          | Bob          | DIAB100 MYOP |
+| 4          | George       | ACNE DIAB100 |
+| 5          | Alain        | DIAB201      |
++------------+--------------+--------------+
+Output: 
++------------+--------------+--------------+
+| patient_id | patient_name | conditions   |
++------------+--------------+--------------+
+| 3          | Bob          | DIAB100 MYOP |
+| 4          | George       | ACNE DIAB100 | 
++------------+--------------+--------------+
+Explanation: Bob and George both have a condition that starts with DIAB1.
+*/
+SELECT patient_id "patient_id", patient_name "patient_name",
+     conditions "conditions"
+FROM patients
+WHERE replace(conditions,' ','$$') LIKE '%$$DIAB1%'
+OR conditions LIKE 'DIAB1%';
+
+/*1581. Customer Who Visited but Did Not Make Any Transactions
+Write an SQL query to find the IDs of the users who visited without making any transactions and the number of times they made these types of visits.
+Return the result table sorted in any order.
+The query result format is in the following example.
+Input: 
+Visits
++----------+-------------+
+| visit_id | customer_id |
++----------+-------------+
+| 1        | 23          |
+| 2        | 9           |
+| 4        | 30          |
+| 5        | 54          |
+| 6        | 96          |
+| 7        | 54          |
+| 8        | 54          |
++----------+-------------+
+Transactions
++----------------+----------+--------+
+| transaction_id | visit_id | amount |
++----------------+----------+--------+
+| 2              | 5        | 310    |
+| 3              | 5        | 300    |
+| 9              | 5        | 200    |
+| 12             | 1        | 910    |
+| 13             | 2        | 970    |
++----------------+----------+--------+
+Output: 
++-------------+----------------+
+| customer_id | count_no_trans |
++-------------+----------------+
+| 54          | 2              |
+| 30          | 1              |
+| 96          | 1              |
++-------------+----------------+
+Explanation: 
+Customer with id = 23 visited the mall once and made one transaction during the visit with id = 12.
+Customer with id = 9 visited the mall once and made one transaction during the visit with id = 13.
+Customer with id = 30 visited the mall once and did not make any transactions.
+Customer with id = 54 visited the mall three times. During 2 visits they did not make any transactions, and during one visit they made 3 transactions.
+Customer with id = 96 visited the mall once and did not make any transactions.
+As we can see, users with IDs 30 and 96 visited the mall one time without making any transactions. Also, user 54 visited the mall twice and did not make any transactions.
+*/
+SELECT customer_id "customer_id", count(*) "count_no_trans"
+FROM (SELECT v.customer_id, nvl(t.transaction_id,0) num
+    FROM visits v, transactions t
+    WHERE v.visit_id = t.visit_id(+))
+WHERE num = 0
+GROUP BY customer_id;
+
+/*1587. Bank Account Summary II
+Write an SQL query to report the name and balance of users with a balance higher than 10000. The balance of an account is equal to the sum of the amounts of all transactions involving that account.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Users table:
++------------+--------------+
+| account    | name         |
++------------+--------------+
+| 900001     | Alice        |
+| 900002     | Bob          |
+| 900003     | Charlie      |
++------------+--------------+
+Transactions table:
++------------+------------+------------+---------------+
+| trans_id   | account    | amount     | transacted_on |
++------------+------------+------------+---------------+
+| 1          | 900001     | 7000       |  2020-08-01   |
+| 2          | 900001     | 7000       |  2020-09-01   |
+| 3          | 900001     | -3000      |  2020-09-02   |
+| 4          | 900002     | 1000       |  2020-09-12   |
+| 5          | 900003     | 6000       |  2020-08-07   |
+| 6          | 900003     | 6000       |  2020-09-07   |
+| 7          | 900003     | -4000      |  2020-09-11   |
++------------+------------+------------+---------------+
+Output: 
++------------+------------+
+| name       | balance    |
++------------+------------+
+| Alice      | 11000      |
++------------+------------+
+Explanation: 
+Alice's balance is (7000 + 7000 - 3000) = 11000.
+Bob's balance is 1000.
+Charlie's balance is (6000 + 6000 - 4000) = 8000.
+*/
+SELECT u.name "name", a.balance "balance"
+FROM users u, (SELECT account, sum(amount) balance
+    FROM transactions
+    GROUP BY account) a
+WHERE u.account = a.account
+AND balance > 10000;
+
+
+
