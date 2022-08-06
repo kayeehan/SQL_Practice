@@ -1488,5 +1488,103 @@ SELECT to_char(event_day,'yyyy-mm-dd') "day", emp_id "emp_id",
 FROM employees
 GROUP BY event_day, emp_id;
 
+/*1757. Recyclable and Low Fat Products
+Write an SQL query to find the ids of products that are both low fat and recyclable.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Products table:
++-------------+----------+------------+
+| product_id  | low_fats | recyclable |
++-------------+----------+------------+
+| 0           | Y        | N          |
+| 1           | Y        | Y          |
+| 2           | N        | Y          |
+| 3           | Y        | Y          |
+| 4           | N        | N          |
++-------------+----------+------------+
+Output: 
++-------------+
+| product_id  |
++-------------+
+| 1           |
+| 3           |
++-------------+
+Explanation: Only products 1 and 3 are both low fat and recyclable.
+*/
+SELECT product_id "product_id"
+FROM products
+WHERE low_fats = 'Y'
+AND recyclable = 'Y';
 
+/*1795. Rearrange Products Table
+Write an SQL query to rearrange the Products table so that each row has (product_id, store, price). If a product is not available in a store, do not include a row with that product_id and store combination in the result table.
+Return the result table in any order.
+The query result format is in the following example.
+Input: 
+Products table:
++------------+--------+--------+--------+
+| product_id | store1 | store2 | store3 |
++------------+--------+--------+--------+
+| 0          | 95     | 100    | 105    |
+| 1          | 70     | null   | 80     |
++------------+--------+--------+--------+
+Output: 
++------------+--------+-------+
+| product_id | store  | price |
++------------+--------+-------+
+| 0          | store1 | 95    |
+| 0          | store2 | 100   |
+| 0          | store3 | 105   |
+| 1          | store1 | 70    |
+| 1          | store3 | 80    |
++------------+--------+-------+
+Explanation: 
+Product 0 is available in all three stores with prices 95, 100, and 105 respectively.
+Product 1 is available in store1 with price 70 and store3 with price 80. The product is not available in store2.
+*/
+SELECT *
+FROM (SELECT product_id "product_id", store1 "store1",
+      store2 "store2", store3 "store3"
+      FROM products
+     WHERE store1 is not null
+     OR store2 is not null
+     OR store3 is not null)
+UNPIVOT(price for store in ("store1","store2","store3"));
 
+/*1873. Calculate Special Bonus
+Write an SQL query to calculate the bonus of each employee. The bonus of an employee is 100% of their salary if the ID of the employee is an odd number and the employee name does not start with the character 'M'. The bonus of an employee is 0 otherwise.
+Return the result table ordered by employee_id.
+The query result format is in the following example.
+Input: 
+Employees table:
++-------------+---------+--------+
+| employee_id | name    | salary |
++-------------+---------+--------+
+| 2           | Meir    | 3000   |
+| 3           | Michael | 3800   |
+| 7           | Addilyn | 7400   |
+| 8           | Juan    | 6100   |
+| 9           | Kannon  | 7700   |
++-------------+---------+--------+
+Output: 
++-------------+-------+
+| employee_id | bonus |
++-------------+-------+
+| 2           | 0     |
+| 3           | 0     |
+| 7           | 7400  |
+| 8           | 0     |
+| 9           | 7700  |
++-------------+-------+
+Explanation: 
+The employees with IDs 2 and 8 get 0 bonus because they have an even employee_id.
+The employee with ID 3 gets 0 bonus because their name starts with 'M'.
+The rest of the employees get a 100% bonus.
+*/
+SELECT employee_id "employee_id", 
+        CASE
+        WHEN mod(employee_id,2)=1 AND substr(name,1,1)!='M' THEN salary
+        ELSE 0 END "bonus"
+FROM employees
+ORDER BY employee_id;
